@@ -15,6 +15,7 @@ const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } 
 const rooms = {};
 const botAvatars = ['👨‍💼', '👩‍💼', '👨‍⚕️', '👩‍⚕️', '👨‍🎓', '👩‍🎓', '👨‍🍳', '👩‍🍳', '👨‍🎤', '👩‍🎤', '👨‍🏫', '👩‍🏫', '🕵️‍♂️', '🕵️‍♀️', '👨‍🚀'];
 
+// 1. 벌점(소머리) 계산 함수
 function calculateBullheads(number) {
     if (number === 55) return 7;
     if (number % 11 === 0) return 5;
@@ -23,6 +24,7 @@ function calculateBullheads(number) {
     return 1;
 }
 
+// 2. 카드 덱 생성 (1~104)
 function createDeck() {
     let newDeck = [];
     for (let i = 1; i <= 104; i++) {
@@ -39,6 +41,7 @@ function shuffle(array) {
     return array;
 }
 
+// 3. 방 초기화 함수
 function initRoom(roomName) {
     return {
         name: roomName,
@@ -85,6 +88,7 @@ function broadcastGameState(roomId) {
     });
 }
 
+// 💡 봇 타이머 실행 방어 로직이 포함된 봇 트리거
 function triggerBots(roomId) {
     const room = rooms[roomId];
     if (!room || !room.isGameRunning || room.phase !== 'PLAYING') return;
@@ -94,10 +98,16 @@ function triggerBots(roomId) {
             const hasSubmitted = room.submittedCards.some(sc => sc.playerId === p.id);
             if (!hasSubmitted) {
                 setTimeout(() => {
-                    if (room.phase !== 'PLAYING') return;
+                    const currentRoom = rooms[roomId];
+                    if (!currentRoom || !currentRoom.isGameRunning || currentRoom.phase !== 'PLAYING') return;
+
+                    // 💡 타이머 실행 시점에 한 번 더 중복 및 손패 검증 (봇 멈춤 방지)
+                    const alreadySubmittedNow = currentRoom.submittedCards.some(sc => sc.playerId === p.id);
+                    if (alreadySubmittedNow || p.hand.length === 0) return;
+
                     const randomIdx = Math.floor(Math.random() * p.hand.length);
                     const playedCard = p.hand.splice(randomIdx, 1)[0];
-                    room.submittedCards.push({ playerId: p.id, card: playedCard });
+                    currentRoom.submittedCards.push({ playerId: p.id, card: playedCard });
                     checkAllCardsSubmitted(roomId);
                 }, 1000 + Math.random() * 2000); 
             }
@@ -111,6 +121,7 @@ function checkAllCardsSubmitted(roomId) {
 
     if (room.submittedCards.length === room.players.length) {
         room.phase = 'RESOLVING';
+        // 공개된 카드를 작은 숫자부터 오름차순 정렬
         room.submittedCards.sort((a, b) => a.card.number - b.card.number);
         
         io.to(roomId).emit('systemMessage', `모든 카드가 공개되었습니다! 숫자 순서대로 배치합니다.`);
@@ -118,6 +129,7 @@ function checkAllCardsSubmitted(roomId) {
     }
 }
 
+// 4. 핵심 알고리즘: 카드 배치 및 벌점 판정
 function processNextCard(roomId) {
     const room = rooms[roomId];
     if (!room || !room.isGameRunning) return;
@@ -140,6 +152,7 @@ function processNextCard(roomId) {
     let targetRowIndex = -1;
     let minDiff = Infinity;
 
+    // 카드가 놓일 위치(행) 찾기
     for (let i = 0; i < 4; i++) {
         const row = room.rows[i];
         const lastCard = row[row.length - 1];
@@ -149,6 +162,7 @@ function processNextCard(roomId) {
         }
     }
 
+    // 어떤 행의 카드보다도 숫자가 작을 때 (벌점 행 선택)
     if (targetRowIndex === -1) {
         if (player.isBot) {
             let minBullheads = Infinity; let bestRow = 0;
@@ -170,6 +184,7 @@ function processNextCard(roomId) {
 
     room.rows[targetRowIndex].push(card);
     
+    // 6번째 카드가 되었을 때 벌점 부여
     if (room.rows[targetRowIndex].length === 6) {
         const penaltyCards = room.rows[targetRowIndex].splice(0, 5);
         const penaltyScore = penaltyCards.reduce((sum, c) => sum + c.bullheads, 0);
@@ -205,13 +220,13 @@ function executeRowSelection(roomId, player, rowIndex, card) {
 function endRound(roomId) {
     const room = rooms[roomId];
     room.isGameRunning = false;
-    room.players.sort((a, b) => a.penalty - b.penalty);
+    room.players.sort((a, b) => a.penalty - b.penalty); // 벌점 적은 순으로 정렬
     io.to(roomId).emit('gameOver', room.players); 
     io.to(roomId).emit('systemMessage', `라운드 종료! 1등: ${room.players[0].name} (벌점 ${room.players[0].penalty}점)`);
     broadcastRoomList();
 }
 
-// 💡 추가된 방 초기화 공통 함수 (버그 해결의 핵심)
+// 💡 방을 깔끔하게 초기화하는 공통 함수 (대기실 복귀 버그 완벽 해결)
 function resetRoom(roomId) {
     const room = rooms[roomId];
     if(!room) return;
@@ -343,11 +358,11 @@ io.on('connection', (socket) => {
         executeRowSelection(roomId, player, rowIndex, room.pendingCard);
     });
 
-    // 💡 버그가 있던 중단/대기실 복귀 로직을 resetRoom 하나로 통일
+    // 💡 게임 중단 및 복귀 시 조건 없이 강제 초기화 보장
     socket.on('stopGame', () => {
         const room = rooms[socket.roomId];
         const player = room?.players.find(p => p.id === socket.id);
-        if (player && player.isHost && room.isGameRunning) resetRoom(socket.roomId);
+        if (player && player.isHost) resetRoom(socket.roomId);
     });
 
     socket.on('returnToLobby', () => {

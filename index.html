@@ -9,6 +9,7 @@
 
     <style>
         * { -webkit-tap-highlight-color: transparent; }
+        
         html, body {
             height: 100%; margin: 0; padding: 0; overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -34,8 +35,9 @@
         }
         @media (min-width: 800px) { .neon-surface { border-radius: 18px; } }
 
-        .top-bar { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: flex-start; align-items: center; padding: 12px 15px; box-sizing: border-box; z-index: 100; }
-        .top-btn { background: rgba(0,0,0,0.6); border: 1px solid #8a2be2; color: #d8b4fe; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: bold; transition: 0.2s;}
+        /* 로비 및 공통 UI */
+        .top-bar { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: flex-start; align-items: center; padding: 10px 15px; box-sizing: border-box; z-index: 100; }
+        .top-btn { background: rgba(0,0,0,0.6); border: 1px solid #8a2be2; color: #d8b4fe; padding: 5px 10px; border-radius: 20px; font-size: 0.8rem; cursor: pointer; font-weight: bold; transition: 0.2s;}
         .top-btn:hover { background: rgba(138, 43, 226, 0.4); color: #fff; }
         .top-btn.danger { color: #ff4d4d; border-color: #ff4d4d; background: rgba(255, 77, 77, 0.2); }
 
@@ -61,13 +63,14 @@
         .room-item { background: rgba(138, 43, 226, 0.1); border-radius: 8px; padding: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid transparent; transition: 0.2s;}
         .room-item:hover { background: rgba(0, 240, 255, 0.15); border-color: #00f0ff; transform: translateX(5px); }
 
-        .card { position: relative; width: 50px; height: 75px; color: #fff; font-family: 'Arial Black', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; border: 2px solid #555; background: linear-gradient(135deg, #2c3e50, #1a252f); box-shadow: 0 4px 10px rgba(0,0,0,0.8); overflow: hidden; cursor: pointer; user-select: none; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
-        @media (min-width: 400px) { .card { width: 60px; height: 90px; } }
+        /* 카드 디자인 유지 */
+        .card { position: relative; width: 45px; height: 68px; color: #fff; font-family: 'Arial Black', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 8px; border: 2px solid #555; background: linear-gradient(135deg, #2c3e50, #1a252f); box-shadow: 0 4px 10px rgba(0,0,0,0.8); overflow: hidden; cursor: pointer; user-select: none; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
+        @media (min-width: 400px) { .card { width: 55px; height: 82px; } }
         
-        .card::before { content: ''; position: absolute; top:0; left:0; width: 100%; height: 40%; background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent); border-radius: 10px 10px 0 0; }
+        .card::before { content: ''; position: absolute; top:0; left:0; width: 100%; height: 40%; background: linear-gradient(to bottom, rgba(255,255,255,0.15), transparent); border-radius: 8px 8px 0 0; }
         
-        .card-val { font-size: 1.8rem; line-height: 1; margin-top: 5px; text-shadow: 2px 2px 4px #000; z-index: 2; }
-        .card-bullheads { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 2px; height: 30px; width: 100%; z-index: 2; }
+        .card-val { font-size: 1.5rem; line-height: 1; margin-top: 4px; text-shadow: 2px 2px 4px #000; z-index: 2; }
+        .card-bullheads { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; padding: 2px; height: 25px; width: 100%; z-index: 2; }
         
         .card[data-bullheads="1"] { border-color: #bdc3c7; }
         .card[data-bullheads="2"] { border-color: #3498db; box-shadow: 0 0 10px rgba(52, 152, 219, 0.4); }
@@ -75,73 +78,80 @@
         .card[data-bullheads="5"] { border-color: #ff007a; box-shadow: 0 0 15px rgba(255, 0, 122, 0.6); color: #ff007a; }
         .card[data-bullheads="7"] { border-color: #8a2be2; background: linear-gradient(135deg, #4a00e0, #8a2be2); box-shadow: 0 0 20px rgba(138, 43, 226, 0.8); }
 
-        .card.playable:hover { transform: translateY(-15px) scale(1.1); box-shadow: 0 10px 20px #00f0ff; border-color: #00f0ff; z-index: 10; } 
+        .card.playable:hover { transform: translateY(-10px) scale(1.1); box-shadow: 0 10px 20px #00f0ff; border-color: #00f0ff; z-index: 10; } 
         .card.submitted { background: #111; border-color: #333; color: transparent; pointer-events: none; opacity: 0.8; }
         .card.submitted .card-bullheads { display: none; }
 
-        @keyframes flyAway {
-            0% { transform: scale(1.1) translateY(-15px); opacity: 1; }
-            40% { transform: scale(1.3) translateY(-40px); opacity: 0.9; }
-            100% { transform: scale(0.3) translateY(-150px); opacity: 0; }
-        }
-        .card.flying { animation: flyAway 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards; pointer-events: none; }
+        @keyframes flyAway { 0% { transform: scale(1.1) translateY(-10px); opacity: 1; } 40% { transform: scale(1.2) translateY(-30px); opacity: 0.9; } 100% { transform: scale(0.3) translateY(-100px); opacity: 0; } }
+        .card.flying { animation: flyAway 0.3s cubic-bezier(0.2, 1, 0.3, 1) forwards; pointer-events: none; }
+        @keyframes shake { 0%,100%{transform:translate(0,0)} 20%{transform:translate(-2px,1px)} 40%{transform:translate(2px,-1px)} 60%{transform:translate(-2px,-1px)} 80%{transform:translate(2px,1px)} }
+        .board-shake { animation: shake 0.2s; }
 
-        @keyframes shake {
-            0% { transform: translate(1px, 1px) rotate(0deg); }
-            10% { transform: translate(-1px, -2px) rotate(-1deg); }
-            20% { transform: translate(-3px, 0px) rotate(1deg); }
-            30% { transform: translate(3px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -1px) rotate(1deg); }
-            50% { transform: translate(-1px, 2px) rotate(-1deg); }
-            60% { transform: translate(-3px, 1px) rotate(0deg); }
-            70% { transform: translate(3px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -1px) rotate(1deg); }
-            90% { transform: translate(1px, 2px) rotate(0deg); }
-            100% { transform: translate(1px, -2px) rotate(-1deg); }
-        }
-        .board-shake { animation: shake 0.3s; }
-
-        .play-area-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding-top: 50px; box-sizing: border-box; }
+        /* 플레이 영역 레이아웃 조정 */
+        .play-area-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding-top: 40px; box-sizing: border-box; }
         
-        .opponents-bar { display: flex; overflow-x: auto; gap: 15px; padding: 10px 15px; background: rgba(0,0,0,0.4); min-height: 90px; align-items: center; white-space: nowrap; scrollbar-width: none; border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
+        /* 💡 수정 1: 상대방 프로필(참가자 화면) 대폭 축소 */
+        .opponents-bar { display: flex; overflow-x: auto; gap: 8px; padding: 5px 10px; background: rgba(0,0,0,0.5); min-height: 55px; align-items: center; white-space: nowrap; scrollbar-width: none; border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
         .opponents-bar::-webkit-scrollbar { display: none; }
         
-        .op-badge { background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); border: 1px solid rgba(255,255,255,0.2); border-radius: 15px; padding: 10px; color: white; text-align: center; min-width: 75px; position: relative; backdrop-filter: blur(5px); }
-        .op-badge .name { font-size: 0.85rem; margin-bottom: 5px; font-weight: bold;}
-        .op-badge .penalty { font-size: 0.95rem; color: #ff4d4d; font-weight: bold; text-shadow: 0 0 5px #ff4d4d; }
-        .op-badge .status-icon { position: absolute; top: -12px; right: -12px; font-size: 1.5rem; background: #000; border-radius: 50%; box-shadow: 0 0 10px rgba(0,240,255,0.5); border: 2px solid #00f0ff; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;}
+        .op-badge { background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 4px 6px; color: white; text-align: center; min-width: 50px; position: relative; backdrop-filter: blur(5px); }
+        .op-badge .avatar-icon { font-size: 1.1rem; line-height: 1; margin-bottom: 2px;}
+        .op-badge .name { font-size: 0.7rem; margin-bottom: 1px; font-weight: normal; color: #ccc;}
+        .op-badge .penalty { font-size: 0.85rem; color: #ff4d4d; font-weight: bold; }
+        .op-badge .status-icon { position: absolute; top: -6px; right: -6px; font-size: 0.9rem; background: #000; border-radius: 50%; border: 1px solid #00f0ff; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;}
 
-        .board-rows { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 12px; padding: 10px; overflow-y: auto; }
-        .card-row { display: flex; gap: 8px; background: rgba(0,0,0,0.5); padding: 8px 12px; border-radius: 12px; min-height: 85px; align-items: center; border-left: 4px solid #8a2be2; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
-        .row-number { color: #d8b4fe; font-weight: 900; margin-right: 10px; font-size: 1.5rem; text-shadow: 0 0 5px #8a2be2; }
+        /* 중앙 보드 행 (공간 최적화 및 💡 위험 행 애니메이션 추가) */
+        .board-rows { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 5px 10px; overflow-y: auto; }
+        .card-row { display: flex; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px 8px; border-radius: 10px; min-height: 70px; align-items: center; border-left: 4px solid #8a2be2; box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: all 0.3s; }
+        .row-number { color: #d8b4fe; font-weight: 900; margin-right: 5px; font-size: 1.2rem; }
+        
+        /* 💡 신규 디자인: 5장이 차서 다음 놓는 사람이 무조건 먹는 행 경고 */
+        .card-row.danger-row { border-left: 4px solid #ff007a; background: rgba(255,0,122,0.15); animation: pulseDanger 1.5s infinite; }
+        @keyframes pulseDanger { 0% { box-shadow: 0 0 5px rgba(255,0,122,0.5); } 50% { box-shadow: 0 0 20px rgba(255,0,122,0.9); } 100% { box-shadow: 0 0 5px rgba(255,0,122,0.5); } }
 
-        .status-text { text-align: center; font-weight: bold; font-size: 1.2rem; color: #00f0ff; margin: 10px 0; min-height: 28px; text-shadow: 0 0 10px #00f0ff; letter-spacing: 1px; }
+        .status-text { text-align: center; font-weight: bold; font-size: 1rem; color: #00f0ff; margin: 5px 0; min-height: 20px; letter-spacing: 1px; }
 
-        #my-cards { display: flex; flex-wrap: nowrap; gap: 10px; overflow-x: auto; padding: 20px 15px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.8); border-top: 2px solid #8a2be2; align-items: center;}
+        #my-cards { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; padding: 15px 10px; width: 100%; box-sizing: border-box; background: rgba(0,0,0,0.8); border-top: 2px solid #8a2be2; align-items: center;}
         #my-cards::-webkit-scrollbar { display: none; }
 
-        #row-select-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(9, 2, 18, 0.9); backdrop-filter: blur(10px); z-index: 200; align-items: center; justify-content: center; flex-direction: column; }
-        .row-select-btn { background: #111; border: 2px solid #ff007a; border-radius: 15px; padding: 15px; margin: 8px; width: 90%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; color: #fff; font-weight: bold; transition: 0.2s; box-shadow: 0 0 15px rgba(255,0,122,0.3); }
+        /* 💡 수정 5: 직관적인 미니 카드 형태의 행 선택 모달 */
+        #row-select-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(9, 2, 18, 0.95); backdrop-filter: blur(10px); z-index: 200; align-items: center; justify-content: center; flex-direction: column; }
+        .row-select-btn { background: rgba(0,0,0,0.7); border: 2px solid #ff007a; border-radius: 12px; padding: 12px; margin: 6px; width: 95%; max-width: 400px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: 0.2s; }
         .row-select-btn:hover { background: rgba(255,0,122,0.2); transform: scale(1.02); }
-        .row-penalty-info { color: #ff007a; font-size: 1.3rem; text-shadow: 0 0 5px #ff007a; }
+        .mini-card { display: inline-block; background: #fff; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 0.85rem; margin-right: 3px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);}
+        .row-penalty-info { color: #ff007a; font-size: 1.2rem; font-weight: bold; text-shadow: 0 0 5px #ff007a; }
 
+        /* 💡 수정 2: 벌점 강렬한 시각 효과 오버레이 */
+        #penalty-flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 500; display: none; align-items: center; justify-content: center; background: transparent; }
+        .flash-active { display: flex !important; animation: redFlashAnim 1s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+        @keyframes redFlashAnim { 0% { background: rgba(255, 0, 122, 0.8); } 100% { background: rgba(255, 0, 122, 0); } }
+        #penalty-popup-text { font-size: 4rem; font-weight: 900; color: #fff; text-shadow: 0 0 30px #ff007a, 0 0 10px #ff007a; opacity: 0; transform: scale(0.5); }
+        .text-pop { animation: popTextAnim 1s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
+        @keyframes popTextAnim { 0% { opacity: 1; transform: scale(0.5) translateY(50px); } 20% { transform: scale(1.2) translateY(0); } 100% { opacity: 0; transform: scale(1) translateY(-50px); } }
+
+        /* 공통 팝업 */
         #toast-container { position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px;}
-        .toast { background: rgba(20, 5, 40, 0.95); color: #00f0ff; padding: 15px 20px; border-radius: 12px; border: 1px solid #00f0ff; text-align: center; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), fadeOut 0.5s ease-out 2.5s forwards; }
+        .toast { background: rgba(20, 5, 40, 0.95); color: #00f0ff; padding: 12px 20px; border-radius: 12px; border: 1px solid #00f0ff; text-align: center; font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), fadeOut 0.5s ease-out 2.5s forwards; font-size: 0.9rem;}
         @keyframes slideUp { from { transform: translateY(30px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
         @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
 
         #winner-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
-        .winner-title { font-size: 3.5rem; color: #00f0ff; margin-bottom: 20px; text-shadow: 0 0 20px #00f0ff; font-style: italic; }
-        .ranking-list { background: rgba(138,43,226,0.1); border: 1px solid rgba(138,43,226,0.5); padding: 25px; border-radius: 20px; text-align: left; margin-bottom: 30px; font-size: 1.3rem; line-height: 2; width: 80%; max-width: 400px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        .winner-title { font-size: 3rem; color: #00f0ff; margin-bottom: 20px; text-shadow: 0 0 20px #00f0ff; font-style: italic; }
+        .ranking-list { background: rgba(138,43,226,0.1); border: 1px solid rgba(138,43,226,0.5); padding: 20px; border-radius: 15px; text-align: left; margin-bottom: 30px; font-size: 1.2rem; line-height: 2; width: 85%; max-width: 350px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
     <div id="toast-container"></div>
     
+    <!-- 💡 벌점 시각 효과 오버레이 -->
+    <div id="penalty-flash-overlay">
+        <div id="penalty-popup-text"></div>
+    </div>
+    
     <div id="winner-screen">
         <h1 class="winner-title">라운드 종료!</h1>
         <div class="ranking-list" id="ranking-list"></div>
-        <button id="btn-return-lobby" onclick="requestReturnToLobby()" class="casino-btn" style="max-width: 250px; display: none;">대기실로 돌아가기 (방장)</button>
+        <button id="btn-return-lobby" onclick="requestReturnToLobby()" class="casino-btn" style="max-width: 250px; display: none;">대기실로 돌아가기</button>
         <p id="wait-return-msg" style="display:none; color: #d8b4fe;">방장이 대기실로 돌아가기를 기다리는 중입니다...</p>
     </div>
 
@@ -177,19 +187,19 @@
                 <button class="top-btn" onclick="location.reload()">⬅️ 나가기</button>
             </div>
             
-            <h2 style="color: #fff; margin-top:40px;">테이블 대기실 <span id="display-room-code" style="color: #00f0ff;"></span></h2>
-            <div id="player-list" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-top: 10px;"></div>
+            <h2 style="color: #fff; margin-top:35px; font-size:1.5rem;">대기실 <span id="display-room-code" style="color: #00f0ff;"></span></h2>
+            <div id="player-list" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-top: 5px;"></div>
             
             <div id="host-controls" style="display: none; flex-direction: column;">
-                <div style="display: flex; gap: 10px; align-items: center; margin-top: 15px; background: rgba(138, 43, 226, 0.2); padding: 15px; border-radius: 12px;">
+                <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px; background: rgba(138, 43, 226, 0.2); padding: 10px; border-radius: 10px;">
                     <span style="font-weight:bold;">봇 추가:</span>
-                    <input type="number" id="bot-count" min="0" max="9" value="1" style="width: 70px; padding: 10px; margin: 0;">
-                    <button class="casino-btn" onclick="addBots()" style="margin: 0; width:auto; padding: 10px 20px;">추가</button>
+                    <input type="number" id="bot-count" min="0" max="9" value="1" style="width: 60px; padding: 8px; margin: 0; font-size:1rem;">
+                    <button class="casino-btn" onclick="addBots()" style="margin: 0; width:auto; padding: 8px 15px;">추가</button>
                 </div>
-                <button id="btn-start" class="casino-btn btn-start" onclick="startGame()" style="margin-top: 15px;" disabled>모두 준비 완료 시 시작</button>
+                <button id="btn-start" class="casino-btn btn-start" onclick="startGame()" style="margin-top: 10px;" disabled>모두 준비 완료 시 시작</button>
             </div>
 
-            <div id="guest-controls" style="display: none; flex-direction: column; margin-top: 15px;">
+            <div id="guest-controls" style="display: none; flex-direction: column; margin-top: 10px;">
                 <button id="btn-ready" class="casino-btn btn-ready" onclick="toggleReady()">준비하기</button>
             </div>
         </div>
@@ -199,8 +209,8 @@
     <div class="casino-table" id="play-area" style="display:none;">
         <div class="neon-surface">
             <div class="top-bar">
-                <span id="my-penalty-display" style="font-weight:900; font-size:1.2rem; color:#ff007a; text-shadow: 0 0 5px #ff007a;">내 벌점: 0 🐂</span>
-                <button id="stop-game-btn" class="top-btn danger" onclick="stopGame()" style="display: none; margin-left:auto;">게임 중단</button>
+                <span id="my-penalty-display" style="font-weight:900; font-size:1.1rem; color:#ff007a; text-shadow: 0 0 5px #ff007a;">내 벌점: 0 🐂</span>
+                <button id="stop-game-btn" class="top-btn danger" onclick="stopGame()" style="display: none; margin-left:auto;">중단</button>
             </div>
 
             <div class="play-area-layout">
@@ -214,8 +224,8 @@
 
     <!-- 행 선택 모달 -->
     <div id="row-select-modal">
-        <h2 style="color: #ff007a; margin-bottom: 5px; text-shadow: 0 0 10px #ff007a;">카드가 너무 작습니다!</h2>
-        <p style="color: white; margin-bottom: 20px; font-size: 1.1rem;">가져갈(벌점을 먹을) 행을 선택하세요.</p>
+        <h2 style="color: #ff007a; margin-bottom: 5px; text-shadow: 0 0 10px #ff007a; font-size: 1.5rem;">카드가 너무 작습니다!</h2>
+        <p style="color: white; margin-bottom: 15px; font-size: 1rem;">벌점을 가져갈 행을 선택하세요.</p>
         <div id="row-select-buttons" style="width: 100%; display: flex; flex-direction: column; align-items: center;"></div>
     </div>
 
@@ -229,33 +239,45 @@
         let currentPhase = 'WAITING';
         let previousPhase = 'WAITING'; 
         let hasSubmittedThisTurn = false;
-        let isFirstTurn = true; // 💡 새 게임이 시작될 때마다 Start 음성을 위한 변수
+        let isFirstTurn = true; 
+        
+        let localMyPenalty = 0; // 💡 벌점 번쩍임을 계산하기 위한 로컬 변수
+
+        // 💡 3. 아이폰 TTS 권한 해제를 위한 글로벌 락 해제 로직
+        let isTtsUnlocked = false;
+        function unlockTTS() {
+            if(isTtsUnlocked) return;
+            const unlockMsg = new SpeechSynthesisUtterance('');
+            unlockMsg.volume = 0;
+            window.speechSynthesis.speak(unlockMsg);
+            isTtsUnlocked = true;
+            // 한 번 해제되면 리스너 제거
+            window.removeEventListener('click', unlockTTS);
+            window.removeEventListener('touchstart', unlockTTS);
+        }
+        window.addEventListener('click', unlockTTS);
+        window.addEventListener('touchstart', unlockTTS);
 
         function playStartVoice() {
+            if(!window.speechSynthesis) return;
             const msg = new SpeechSynthesisUtterance("Start");
-            msg.lang = 'en-US';
-            msg.rate = 1.1;
-            msg.pitch = 1.0;
+            msg.lang = 'en-US'; msg.rate = 1.1; msg.pitch = 1.0;
             window.speechSynthesis.speak(msg);
         }
 
         function playNextVoice() {
+            if(!window.speechSynthesis) return;
             const msg = new SpeechSynthesisUtterance("Next");
-            msg.lang = 'en-US';
-            msg.rate = 1.1;
-            msg.pitch = 0.9;
+            msg.lang = 'en-US'; msg.rate = 1.1; msg.pitch = 0.9;
             window.speechSynthesis.speak(msg);
         }
 
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
-        
         function initAudio() {
             if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
         }
-        window.addEventListener('click', initAudio, { once: true });
-        window.addEventListener('touchstart', initAudio, { once: true });
 
         function playCardSlapSound() {
             if (!audioCtx) return;
@@ -268,34 +290,22 @@
             
             const noise = audioCtx.createBufferSource();
             noise.buffer = buffer;
-            
             const noiseFilter = audioCtx.createBiquadFilter();
-            noiseFilter.type = 'lowpass'; 
-            noiseFilter.frequency.value = 800; 
-            
+            noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 800; 
             const noiseGain = audioCtx.createGain();
-            noiseGain.gain.setValueAtTime(0.4, now);
-            noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
-            
+            noiseGain.gain.setValueAtTime(0.4, now); noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
             noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
             noise.start(now);
 
             const osc = audioCtx.createOscillator();
             const oscGain = audioCtx.createGain();
-            osc.type = 'sine'; 
-            osc.frequency.setValueAtTime(150, now); 
-            osc.frequency.exponentialRampToValueAtTime(40, now + 0.15); 
-            
-            oscGain.gain.setValueAtTime(0.8, now);
-            oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
-            
+            osc.type = 'sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.15); 
+            oscGain.gain.setValueAtTime(0.8, now); oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
             osc.connect(oscGain); oscGain.connect(audioCtx.destination);
             osc.start(now); osc.stop(now + 0.15);
 
             const board = document.getElementById('board-rows');
-            board.classList.remove('board-shake');
-            void board.offsetWidth;
-            board.classList.add('board-shake');
+            board.classList.remove('board-shake'); void board.offsetWidth; board.classList.add('board-shake');
         }
 
         function playPenaltySound() {
@@ -304,20 +314,28 @@
             
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sawtooth';
-            osc.frequency.setValueAtTime(100, now);
-            osc.frequency.linearRampToValueAtTime(20, now + 0.5); 
-            
-            gain.gain.setValueAtTime(1, now);
-            gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
-            
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(20, now + 0.5); 
+            gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(now); osc.stop(now + 0.5);
             
             const playArea = document.getElementById('play-area');
-            playArea.classList.remove('board-shake');
-            void playArea.offsetWidth;
-            playArea.classList.add('board-shake');
+            playArea.classList.remove('board-shake'); void playArea.offsetWidth; playArea.classList.add('board-shake');
+        }
+
+        // 💡 2. 벌점 획득 시 화면 번쩍임 애니메이션 트리거 함수
+        function triggerPenaltyFlash(penaltyAmount) {
+            const overlay = document.getElementById('penalty-flash-overlay');
+            const textEl = document.getElementById('penalty-popup-text');
+            
+            textEl.textContent = `+ ${penaltyAmount} 🐂`;
+            
+            overlay.classList.remove('flash-active');
+            textEl.classList.remove('text-pop');
+            void overlay.offsetWidth; // 리플로우 강제 (애니메이션 재시작 트릭)
+            
+            overlay.classList.add('flash-active');
+            textEl.classList.add('text-pop');
         }
 
         socket.on('actionSound', (type) => {
@@ -342,7 +360,7 @@
         }
 
         function enterMainLobby() {
-            initAudio();
+            initAudio(); unlockTTS(); // 버튼 클릭 시 확실하게 오디오 잠금 해제
             myNickname = document.getElementById('nickname-input').value.trim();
             if (!myNickname) return alert('닉네임을 입력해주세요.');
             document.getElementById('login-area').style.display = 'none';
@@ -350,14 +368,11 @@
         }
 
         socket.on('roomList', (rooms) => {
-            const listElement = document.getElementById('room-list');
-            listElement.innerHTML = '';
-            if (rooms.length === 0) {
-                listElement.innerHTML = '<div style="padding: 30px; color: #888;">개설된 방이 없습니다.</div>'; return;
-            }
+            const listElement = document.getElementById('room-list'); listElement.innerHTML = '';
+            if (rooms.length === 0) { listElement.innerHTML = '<div style="padding: 30px; color: #888;">개설된 방이 없습니다.</div>'; return; }
             rooms.forEach(room => {
                 const roomDiv = document.createElement('div'); roomDiv.className = 'room-item';
-                roomDiv.innerHTML = `<div style="font-weight:bold; font-size:1.1rem; color:#fff;">${room.name}</div><div style="font-size:0.9rem; color:#00f0ff;">${room.playerCount}명 / 10명</div>`;
+                roomDiv.innerHTML = `<div style="font-weight:bold; font-size:1rem; color:#fff;">${room.name}</div><div style="font-size:0.8rem; color:#00f0ff;">${room.playerCount}명 / 10명</div>`;
                 roomDiv.onclick = () => socket.emit('joinRoom', { nickname: myNickname, avatar: selectedAvatar, roomId: room.id });
                 listElement.appendChild(roomDiv);
             });
@@ -395,9 +410,9 @@
             let allReady = true;
             players.forEach(p => { 
                 if (!p.isReady) allReady = false;
-                listElement.innerHTML += `<div style="padding: 12px 10px; border-bottom:1px solid rgba(138,43,226,0.3); display:flex; justify-content:space-between; align-items:center; font-size: 1.1rem;">
+                listElement.innerHTML += `<div style="padding: 10px 8px; border-bottom:1px solid rgba(138,43,226,0.3); display:flex; justify-content:space-between; align-items:center; font-size: 1rem;">
                     <span>${p.avatar} ${p.name} ${p.isHost ? '👑' : ''}</span> 
-                    <span style="font-size: 1.2rem;">${p.isHost ? '' : (p.isReady ? '✅' : '⏳')}</span>
+                    <span style="font-size: 1.1rem;">${p.isHost ? '' : (p.isReady ? '✅' : '⏳')}</span>
                 </div>`; 
             });
 
@@ -407,7 +422,7 @@
             }
         });
 
-        function startGame() { socket.emit('startGame'); }
+        function startGame() { unlockTTS(); socket.emit('startGame'); }
         function stopGame() { if(confirm('게임을 중단합니까?')) socket.emit('stopGame'); }
         function requestReturnToLobby() { socket.emit('returnToLobby'); }
 
@@ -416,6 +431,7 @@
             document.getElementById('play-area').style.display = 'flex'; 
             document.getElementById('winner-screen').style.display = 'none';
             if (amIHost) document.getElementById('stop-game-btn').style.display = 'block'; 
+            localMyPenalty = 0; // 시작 시 로컬 벌점 초기화
         });
 
         socket.on('gameStopped', () => {
@@ -425,7 +441,7 @@
             document.getElementById('stop-game-btn').style.display = 'none';
             
             hasSubmittedThisTurn = false;
-            isFirstTurn = true; // 💡 다음 게임을 위해 첫 턴 상태 안전하게 초기화
+            isFirstTurn = true; 
             
             document.getElementById('board-rows').innerHTML = '';
             document.getElementById('my-cards').innerHTML = '';
@@ -440,8 +456,7 @@
         });
 
         function createCardDOM(card, isPlayable, isHidden = false) {
-            const div = document.createElement('div'); 
-            div.className = 'card';
+            const div = document.createElement('div'); div.className = 'card';
             
             if (isHidden) {
                 div.classList.add('submitted');
@@ -452,36 +467,34 @@
             if (isPlayable) div.classList.add('playable');
             div.dataset.bullheads = card.bullheads;
             
-            let iconSize = '1.2rem'; 
-            if (card.bullheads >= 7) iconSize = '0.55rem'; 
-            else if (card.bullheads >= 5) iconSize = '0.75rem'; 
-            else if (card.bullheads >= 3) iconSize = '0.95rem';
+            let iconSize = '1rem'; 
+            if (card.bullheads >= 7) iconSize = '0.45rem'; 
+            else if (card.bullheads >= 5) iconSize = '0.65rem'; 
+            else if (card.bullheads >= 3) iconSize = '0.8rem';
 
             let bullheadsHTML = '';
-            for(let i=0; i<card.bullheads; i++) { 
-                bullheadsHTML += `<span style="font-size: ${iconSize}; margin: 0 1px;">🐂</span>`; 
-            }
-
-            div.innerHTML = `
-                <div class="card-val">${card.number}</div>
-                <div class="card-bullheads">${bullheadsHTML}</div>
-            `;
+            for(let i=0; i<card.bullheads; i++) { bullheadsHTML += `<span style="font-size: ${iconSize}; margin: 0 1px;">🐂</span>`; }
+            div.innerHTML = `<div class="card-val">${card.number}</div><div class="card-bullheads">${bullheadsHTML}</div>`;
             return div;
         }
 
         socket.on('updateGame', (state) => {
             currentPhase = state.phase;
 
-            // 💡 "Start" 와 "Next" 음성 재생 로직 적용 완료
             if (previousPhase !== 'PLAYING' && currentPhase === 'PLAYING') {
-                if (isFirstTurn) {
-                    playStartVoice();
-                    isFirstTurn = false; 
-                } else {
-                    playNextVoice();
-                }
+                if (isFirstTurn) { playStartVoice(); isFirstTurn = false; } 
+                else { playNextVoice(); }
             }
             previousPhase = currentPhase; 
+
+            // 💡 2. 벌점이 증가했는지 감지하여 번쩍임 효과 실행
+            if (state.myPenalty > localMyPenalty) {
+                const penaltyDiff = state.myPenalty - localMyPenalty;
+                triggerPenaltyFlash(penaltyDiff);
+                localMyPenalty = state.myPenalty;
+            } else if (state.myPenalty === 0) {
+                localMyPenalty = 0; // 새 라운드 대비 초기화
+            }
 
             document.getElementById('my-penalty-display').textContent = `내 벌점: ${state.myPenalty} 🐂`;
 
@@ -495,7 +508,7 @@
                 opponentsBar.innerHTML += `
                     <div class="op-badge">
                         <div class="status-icon" style="color: ${hasSubmitted ? '#00ff87' : '#fff'}; border-color: ${hasSubmitted ? '#00ff87' : '#555'}">${statusEmoji}</div>
-                        <div style="font-size: 1.5rem;">${p.avatar}</div>
+                        <div class="avatar-icon">${p.avatar}</div>
                         <div class="name">${p.name}</div>
                         <div class="penalty">🐂 ${p.penalty}</div>
                     </div>`;
@@ -504,6 +517,10 @@
             const boardRows = document.getElementById('board-rows'); boardRows.innerHTML = '';
             state.rows.forEach((row, index) => {
                 const rowDiv = document.createElement('div'); rowDiv.className = 'card-row';
+                
+                // 💡 4. 경고 시스템: 카드가 5장이면 danger-row 클래스 추가
+                if (row.length === 5) rowDiv.classList.add('danger-row');
+
                 rowDiv.innerHTML = `<div class="row-number">${index + 1}</div>`;
                 row.forEach(card => { rowDiv.appendChild(createCardDOM(card, false)); });
                 boardRows.appendChild(rowDiv);
@@ -532,18 +549,12 @@
                 state.myHand.forEach((card, index) => {
                     const isPlayable = (currentPhase === 'PLAYING' && !hasSubmittedThisTurn);
                     const cardDOM = createCardDOM(card, isPlayable);
-                    
                     cardDOM.onclick = () => {
                         if (isPlayable && !hasSubmittedThisTurn) {
                             hasSubmittedThisTurn = true;
-                            
                             playCardSlapSound();
                             cardDOM.classList.add('flying');
-                            
-                            setTimeout(() => {
-                                socket.emit('submitCard', index);
-                                cardDOM.style.display = 'none';
-                            }, 200); 
+                            setTimeout(() => { socket.emit('submitCard', index); cardDOM.style.display = 'none'; }, 200); 
                         }
                     };
                     myCardsDiv.appendChild(cardDOM);
@@ -551,6 +562,7 @@
             }
         });
 
+        // 💡 5. 직관적인 행 교체 모달 (미니 카드 표시)
         socket.on('requireRowSelection', (data) => {
             const modal = document.getElementById('row-select-modal');
             const btnContainer = document.getElementById('row-select-buttons');
@@ -560,9 +572,22 @@
                 const penalty = row.reduce((sum, c) => sum + c.bullheads, 0);
                 const btn = document.createElement('div');
                 btn.className = 'row-select-btn';
+                
+                // 해당 행에 있는 카드들을 미니 디자인으로 생성
+                let miniCardsHtml = '<div style="display:flex; gap:3px; margin-top:5px; flex-wrap:wrap;">';
+                row.forEach(c => {
+                    miniCardsHtml += `<div class="mini-card">${c.number}</div>`;
+                });
+                miniCardsHtml += '</div>';
+
                 btn.innerHTML = `
-                    <span>${index + 1}번째 행 (마지막 카드: ${row[row.length-1].number})</span>
-                    <span class="row-penalty-info">벌점 ${penalty} 🐂</span>
+                    <div style="display:flex; flex-direction:column; align-items:flex-start;">
+                        <span style="color:#bdc3c7; font-size:0.9rem;">${index + 1}번째 행 (마지막: ${row[row.length-1].number})</span>
+                        ${miniCardsHtml}
+                    </div>
+                    <div style="margin-left: 10px;">
+                        <span class="row-penalty-info">+ ${penalty} 🐂</span>
+                    </div>
                 `;
                 btn.onclick = () => {
                     socket.emit('selectRow', index);
