@@ -9,8 +9,6 @@
 
     <style>
         * { -webkit-tap-highlight-color: transparent; }
-        
-        /* 새로운 테마: 미드나잇 네온 (다크 퍼플 & 블랙) */
         html, body {
             height: 100%; margin: 0; padding: 0; overflow: hidden;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -36,7 +34,6 @@
         }
         @media (min-width: 800px) { .neon-surface { border-radius: 18px; } }
 
-        /* 로비 및 UI 버튼 */
         .top-bar { position: absolute; top: 0; left: 0; width: 100%; display: flex; justify-content: flex-start; align-items: center; padding: 12px 15px; box-sizing: border-box; z-index: 100; }
         .top-btn { background: rgba(0,0,0,0.6); border: 1px solid #8a2be2; color: #d8b4fe; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: bold; transition: 0.2s;}
         .top-btn:hover { background: rgba(138, 43, 226, 0.4); color: #fff; }
@@ -64,7 +61,6 @@
         .room-item { background: rgba(138, 43, 226, 0.1); border-radius: 8px; padding: 15px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border: 1px solid transparent; transition: 0.2s;}
         .room-item:hover { background: rgba(0, 240, 255, 0.15); border-color: #00f0ff; transform: translateX(5px); }
 
-        /* 세련된 카드 디자인 */
         .card { position: relative; width: 50px; height: 75px; color: #fff; font-family: 'Arial Black', sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 10px; border: 2px solid #555; background: linear-gradient(135deg, #2c3e50, #1a252f); box-shadow: 0 4px 10px rgba(0,0,0,0.8); overflow: hidden; cursor: pointer; user-select: none; transition: transform 0.2s, box-shadow 0.2s; flex-shrink: 0; }
         @media (min-width: 400px) { .card { width: 60px; height: 90px; } }
         
@@ -90,7 +86,6 @@
         }
         .card.flying { animation: flyAway 0.4s cubic-bezier(0.2, 1, 0.3, 1) forwards; pointer-events: none; }
 
-        /* 화면 흔들림 효과 (강한 타격 시) */
         @keyframes shake {
             0% { transform: translate(1px, 1px) rotate(0deg); }
             10% { transform: translate(-1px, -2px) rotate(-1deg); }
@@ -232,10 +227,18 @@
         let selectedAvatar = '😎';
         let myNickname = '';
         let currentPhase = 'WAITING';
-        let previousPhase = 'WAITING'; // 💡 턴 전환을 추적하기 위한 변수
+        let previousPhase = 'WAITING'; 
         let hasSubmittedThisTurn = false;
+        let isFirstTurn = true; // 💡 새 게임이 시작될 때마다 Start 음성을 위한 변수
 
-        // 💡 "NEXT" 음성 재생 함수 (TTS)
+        function playStartVoice() {
+            const msg = new SpeechSynthesisUtterance("Start");
+            msg.lang = 'en-US';
+            msg.rate = 1.1;
+            msg.pitch = 1.0;
+            window.speechSynthesis.speak(msg);
+        }
+
         function playNextVoice() {
             const msg = new SpeechSynthesisUtterance("Next");
             msg.lang = 'en-US';
@@ -244,7 +247,6 @@
             window.speechSynthesis.speak(msg);
         }
 
-        // 1. 오디오 컨텍스트 설정
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
         
@@ -255,12 +257,10 @@
         window.addEventListener('click', initAudio, { once: true });
         window.addEventListener('touchstart', initAudio, { once: true });
 
-        // 2. 💡 부드럽고 묵직한 타격음 (lowpass 필터 + sine 파형 적용)
         function playCardSlapSound() {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
 
-            // 소리 1: 종이가 마찰하는 소리 (저음만 통과시킴)
             const bufferSize = audioCtx.sampleRate * 0.05; 
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
             const data = buffer.getChannelData(0);
@@ -280,11 +280,10 @@
             noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
             noise.start(now);
 
-            // 소리 2: 테이블을 치는 묵직한 베이스 소리
             const osc = audioCtx.createOscillator();
             const oscGain = audioCtx.createGain();
-            osc.type = 'sine'; // 부드러운 사인 파형
-            osc.frequency.setValueAtTime(150, now); // 낮은 음
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(150, now); 
             osc.frequency.exponentialRampToValueAtTime(40, now + 0.15); 
             
             oscGain.gain.setValueAtTime(0.8, now);
@@ -293,14 +292,12 @@
             osc.connect(oscGain); oscGain.connect(audioCtx.destination);
             osc.start(now); osc.stop(now + 0.15);
 
-            // 화면을 흔들어주는 타격감 유지
             const board = document.getElementById('board-rows');
             board.classList.remove('board-shake');
             void board.offsetWidth;
             board.classList.add('board-shake');
         }
 
-        // 3. 벌점 먹을 때의 둔탁한 소리
         function playPenaltySound() {
             if (!audioCtx) return;
             const now = audioCtx.currentTime;
@@ -323,17 +320,12 @@
             playArea.classList.add('board-shake');
         }
 
-        // 서버 소리 명령 수신
         socket.on('actionSound', (type) => {
             initAudio(); 
-            if (type === 'play') {
-                playCardSlapSound();
-            } else if (type === 'penalty') {
-                playPenaltySound();
-            }
+            if (type === 'play') playCardSlapSound();
+            else if (type === 'penalty') playPenaltySound();
         });
 
-        // 토스트 알림 등 기존 로직 유지
         function showToast(msg) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div'); toast.className = 'toast'; toast.textContent = msg;
@@ -431,10 +423,14 @@
             document.getElementById('winner-screen').style.display = 'none';
             document.getElementById('game-area').style.display = 'flex';
             document.getElementById('stop-game-btn').style.display = 'none';
+            
             hasSubmittedThisTurn = false;
+            isFirstTurn = true; // 💡 다음 게임을 위해 첫 턴 상태 안전하게 초기화
+            
             document.getElementById('board-rows').innerHTML = '';
             document.getElementById('my-cards').innerHTML = '';
             document.getElementById('opponents-bar').innerHTML = '';
+            
             if (!amIHost) {
                 isReady = false;
                 const btn = document.getElementById('btn-ready');
@@ -473,19 +469,22 @@
             return div;
         }
 
-        // 💡 게임 업데이트 로직 (동기화 버그 수정 포함)
         socket.on('updateGame', (state) => {
             currentPhase = state.phase;
 
-            // 💡 "NEXT" 음성 합성 (이전 턴이 PLAYING이 아닐 때 현재가 PLAYING이 되면 재생)
+            // 💡 "Start" 와 "Next" 음성 재생 로직 적용 완료
             if (previousPhase !== 'PLAYING' && currentPhase === 'PLAYING') {
-                playNextVoice();
+                if (isFirstTurn) {
+                    playStartVoice();
+                    isFirstTurn = false; 
+                } else {
+                    playNextVoice();
+                }
             }
-            previousPhase = currentPhase; // 상태 기억
+            previousPhase = currentPhase; 
 
             document.getElementById('my-penalty-display').textContent = `내 벌점: ${state.myPenalty} 🐂`;
 
-            // 상대방 상태 업데이트
             const opponentsBar = document.getElementById('opponents-bar'); opponentsBar.innerHTML = '';
             state.playersInfo.forEach(p => {
                 if(p.id === socket.id) return;
@@ -502,7 +501,6 @@
                     </div>`;
             });
 
-            // 보드 행 업데이트
             const boardRows = document.getElementById('board-rows'); boardRows.innerHTML = '';
             state.rows.forEach((row, index) => {
                 const rowDiv = document.createElement('div'); rowDiv.className = 'card-row';
@@ -511,11 +509,9 @@
                 boardRows.appendChild(rowDiv);
             });
 
-            // 💡 내 턴 제출 상태 업데이트
             const myStatus = state.submittedStatus.find(s => s.id === socket.id);
             hasSubmittedThisTurn = myStatus ? myStatus.hasSubmitted : false;
             
-            // UI 상태 텍스트
             const statusText = document.getElementById('status-text');
             if (currentPhase === 'PLAYING') {
                 statusText.textContent = hasSubmittedThisTurn ? "다른 플레이어들을 기다리는 중..." : "카드를 1장 선택해 주세요!";
@@ -528,7 +524,6 @@
                 statusText.style.color = "#ff007a";
             }
 
-            // 💡 애니메이션 꼬임 및 카드 중복 선택을 방지하는 동기화 로직 적용
             const myCardsDiv = document.getElementById('my-cards'); 
             const shouldRenderHand = !(currentPhase === 'PLAYING' && hasSubmittedThisTurn);
 
