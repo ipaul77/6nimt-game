@@ -142,7 +142,6 @@
         <p id="wait-return-msg" style="display:none; color: #d8b4fe;">방장이 대기실로 돌아가기를 기다리는 중입니다...</p>
     </div>
 
-    <!-- 로그인 화면 -->
     <div class="login-container" id="login-area">
         <h1 class="title-glow">6Nimmt!</h1>
         <p style="margin: 5px 0 30px 0; color: #00f0ff; letter-spacing: 2px;">NEON EDITION</p>
@@ -160,14 +159,12 @@
         <button class="casino-btn" onclick="enterMainLobby()">로비 입장</button>
     </div>
 
-    <!-- 대기실 (로비) -->
     <div class="lobby-container" id="main-lobby-area" style="display: none;">
         <h2 style="color: #fff;">게임 로비</h2>
         <div class="room-list" id="room-list"></div>
         <button class="casino-btn btn-start" onclick="createNewRoom()">+ 새 방 만들기</button>
     </div>
 
-    <!-- 방 내부 -->
     <div class="casino-table" id="game-area" style="display:none;">
         <div class="neon-surface" style="padding: 20px;">
             <div class="top-bar">
@@ -178,7 +175,6 @@
             <div id="player-list" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.5); border-radius: 10px; padding: 10px; margin-top: 5px;"></div>
             
             <div id="host-controls" style="display: none; flex-direction: column;">
-                <!-- 💡 클릭 방식 봇 추가 UI로 변경 -->
                 <div style="display: flex; gap: 10px; align-items: center; margin-top: 10px; background: rgba(138, 43, 226, 0.2); padding: 10px; border-radius: 10px; justify-content: center;">
                     <span style="font-weight:bold; margin-right: 5px;">봇 추가:</span>
                     <div style="display: flex; align-items: center; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid #8a2be2;">
@@ -197,7 +193,6 @@
         </div>
     </div>
 
-    <!-- 플레이 화면 -->
     <div class="casino-table" id="play-area" style="display:none;">
         <div class="neon-surface">
             <div class="top-bar">
@@ -214,7 +209,6 @@
         </div>
     </div>
 
-    <!-- 행 선택 모달 -->
     <div id="row-select-modal">
         <h2 style="color: #ff007a; margin-bottom: 5px; text-shadow: 0 0 10px #ff007a; font-size: 1.5rem;">카드가 너무 작습니다!</h2>
         <p style="color: white; margin-bottom: 15px; font-size: 1rem;">벌점을 가져갈 행을 선택하세요.</p>
@@ -234,28 +228,43 @@
         let isFirstTurn = true; 
         let localMyPenalty = 0; 
         
-        // 💡 봇 추가 카운터 변수 및 변경 로직
         let currentBotCountInput = 1;
         function changeBotCount(delta) {
-            initAudio(); // 버튼 누를 때 오디오 락 해제
+            forceUnlockAudio(); 
             currentBotCountInput += delta;
             if (currentBotCountInput < 1) currentBotCountInput = 1;
             if (currentBotCountInput > 9) currentBotCountInput = 9;
             document.getElementById('bot-count-display').textContent = currentBotCountInput;
         }
 
-        let isTtsUnlocked = false;
-        function unlockTTS() {
-            if(isTtsUnlocked) return;
-            const unlockMsg = new SpeechSynthesisUtterance('');
-            unlockMsg.volume = 0;
-            window.speechSynthesis.speak(unlockMsg);
-            isTtsUnlocked = true;
-            window.removeEventListener('click', unlockTTS);
-            window.removeEventListener('touchstart', unlockTTS);
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isAudioUnlocked = false;
+
+        function forceUnlockAudio() {
+            if (isAudioUnlocked) return;
+            if (!audioCtx) audioCtx = new AudioContext();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0; 
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(0); osc.stop(audioCtx.currentTime + 0.1);
+
+            if (window.speechSynthesis) {
+                const unlockMsg = new SpeechSynthesisUtterance("unlock");
+                unlockMsg.volume = 0; 
+                window.speechSynthesis.speak(unlockMsg);
+            }
+            isAudioUnlocked = true;
         }
-        window.addEventListener('click', unlockTTS);
-        window.addEventListener('touchstart', unlockTTS);
+
+        function wakeUpAudio() {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
 
         function playStartVoice() {
             if(!window.speechSynthesis) return;
@@ -271,15 +280,9 @@
             window.speechSynthesis.speak(msg);
         }
 
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
-        function initAudio() {
-            if (!audioCtx) audioCtx = new AudioContext();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-        }
-
         function playCardSlapSound() {
             if (!audioCtx) return;
+            wakeUpAudio(); 
             const now = audioCtx.currentTime;
             const bufferSize = audioCtx.sampleRate * 0.05; 
             const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
@@ -308,6 +311,7 @@
 
         function playPenaltySound() {
             if (!audioCtx) return;
+            wakeUpAudio(); 
             const now = audioCtx.currentTime;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
@@ -330,7 +334,7 @@
         }
 
         socket.on('actionSound', (type) => {
-            initAudio(); 
+            wakeUpAudio();
             if (type === 'play') playCardSlapSound();
             else if (type === 'penalty') playPenaltySound();
         });
@@ -351,7 +355,7 @@
         }
 
         function enterMainLobby() {
-            initAudio(); unlockTTS(); 
+            forceUnlockAudio(); 
             myNickname = document.getElementById('nickname-input').value.trim();
             if (!myNickname) return alert('닉네임을 입력해주세요.');
             document.getElementById('login-area').style.display = 'none';
@@ -391,7 +395,6 @@
             btn.textContent = isReady ? '준비 완료 취소' : '준비하기';
         }
 
-        // 💡 봇 추가 클릭 방식 연결
         function addBots() { 
             if (currentBotCountInput > 0) socket.emit('addBots', currentBotCountInput); 
         }
@@ -413,7 +416,7 @@
             }
         });
 
-        function startGame() { unlockTTS(); socket.emit('startGame'); }
+        function startGame() { forceUnlockAudio(); socket.emit('startGame'); }
         function stopGame() { if(confirm('게임을 중단합니까?')) socket.emit('stopGame'); }
         function requestReturnToLobby() { socket.emit('returnToLobby'); }
 
