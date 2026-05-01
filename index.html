@@ -114,7 +114,6 @@
         .mini-card { display: inline-block; background: #fff; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: 900; font-size: 0.85rem; margin-right: 3px; box-shadow: 1px 1px 3px rgba(0,0,0,0.5);}
         .row-penalty-info { color: #ff007a; font-size: 1.2rem; font-weight: bold; text-shadow: 0 0 5px #ff007a; }
 
-        /* 💡 대폭 강화된 벌점 애니메이션 효과 */
         #penalty-flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999; display: none; align-items: center; justify-content: center; background: transparent; }
         .flash-active { display: flex !important; animation: doomFlashAnim 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
         @keyframes doomFlashAnim { 
@@ -133,7 +132,6 @@
             100% { opacity: 0; transform: scale(2) translateY(-100px); filter: blur(10px); } 
         }
         
-        /* 💡 지진(강한 흔들림) 애니메이션 */
         @keyframes earthquake {
             0% { transform: translate(2px, 1px) rotate(0deg); }
             10% { transform: translate(-3px, -2px) rotate(-1deg); }
@@ -157,6 +155,10 @@
         #winner-screen { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 9999; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
         .winner-title { font-size: 3rem; color: #00f0ff; margin-bottom: 20px; text-shadow: 0 0 20px #00f0ff; font-style: italic; }
         .ranking-list { background: rgba(138,43,226,0.1); border: 1px solid rgba(138,43,226,0.5); padding: 20px; border-radius: 15px; text-align: left; margin-bottom: 30px; font-size: 1.2rem; line-height: 2; width: 85%; max-width: 350px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
+        
+        /* 추방 버튼 스타일 */
+        .kick-btn { background: #ff007a; border: none; color: white; border-radius: 5px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(255,0,122,0.5); transition: 0.2s;}
+        .kick-btn:active { transform: scale(0.9); }
     </style>
 </head>
 <body>
@@ -349,7 +351,6 @@
             osc.start(now); osc.stop(now + 0.5);
         }
 
-        // 💡 대폭 강화된 벌점 오버레이 및 진동 트리거
         function triggerPenaltyFlash(penaltyAmount) {
             const overlay = document.getElementById('penalty-flash-overlay');
             const textEl = document.getElementById('penalty-popup-text');
@@ -362,7 +363,6 @@
             overlay.classList.add('flash-active'); textEl.classList.add('text-pop');
             document.body.classList.add('earthquake-shake');
 
-            // 스마트폰 진동 효과 (지원 기기 한정)
             if (navigator.vibrate) {
                 navigator.vibrate([200, 100, 300]);
             }
@@ -382,6 +382,12 @@
 
         socket.on('systemMessage', showToast);
         socket.on('joinError', (msg) => alert(msg));
+        
+        // 강제 추방 알림
+        socket.on('kicked', () => {
+            alert('방장에 의해 대기실에서 추방되었습니다.');
+            location.reload(); 
+        });
 
         function selectAvatar(avatar, element) {
             selectedAvatar = avatar;
@@ -433,32 +439,49 @@
         function addBots() { 
             if (currentBotCountInput > 0) socket.emit('addBots', currentBotCountInput); 
         }
+        
+        // 💡 봇/참가자 추방 로직
+        function kickPlayer(playerId) {
+            if (confirm('이 참가자(또는 봇)를 추방하시겠습니까?')) {
+                socket.emit('kickPlayer', playerId);
+            }
+        }
 
         socket.on('updatePlayers', (players) => {
-            const listElement = document.getElementById('player-list'); listElement.innerHTML = '';
-            let allReady = true;
-            players.forEach(p => { 
-                if (!p.isReady) allReady = false;
-                listElement.innerHTML += `<div style="padding: 10px 8px; border-bottom:1px solid rgba(138,43,226,0.3); display:flex; justify-content:space-between; align-items:center; font-size: 1rem;">
-                    <span>${p.avatar} ${p.name} ${p.isHost ? '👑' : ''}</span> 
-                    <span style="font-size: 1.1rem;">${p.isHost ? '' : (p.isReady ? '✅' : '⏳')}</span>
-                </div>`; 
-            });
-
-            // 💡 방장 위임 로직을 UI에 즉시 반영
+            // 방장 권한 조기 업데이트 (UI 그리기 전)
             const me = players.find(p => p.id === socket.id);
             if (me && me.isHost && !amIHost) {
                 amIHost = true;
                 document.getElementById('host-controls').style.display = 'flex';
                 document.getElementById('guest-controls').style.display = 'none';
                 
-                // 만약 게임 종료 후 대기 중이었다면 버튼도 바꿔줍니다
                 if (document.getElementById('winner-screen').style.display === 'flex') {
                     document.getElementById('btn-return-lobby').style.display = 'block';
                     document.getElementById('wait-return-msg').style.display = 'none';
                 }
-                showToast("방장이 나가서 방장 권한을 위임받았습니다.");
+                showToast("방장 권한을 위임받았습니다.");
             }
+
+            const listElement = document.getElementById('player-list'); listElement.innerHTML = '';
+            let allReady = true;
+            
+            players.forEach(p => { 
+                if (!p.isReady) allReady = false;
+                
+                // 💡 방장일 경우 닉네임 우측에 추방 버튼 추가
+                const kickBtnHtml = (amIHost && !p.isHost) 
+                    ? `<button onclick="kickPlayer('${p.id}')" class="kick-btn">추방</button>` : '';
+
+                listElement.innerHTML += `<div style="padding: 10px 8px; border-bottom:1px solid rgba(138,43,226,0.3); display:flex; justify-content:space-between; align-items:center; font-size: 1rem;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <span>${p.avatar} ${p.name} ${p.isHost ? '👑' : ''}</span> 
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size: 1.1rem;">${p.isHost ? '' : (p.isReady ? '✅' : '⏳')}</span>
+                        ${kickBtnHtml}
+                    </div>
+                </div>`; 
+            });
 
             if (amIHost) {
                 const btnStart = document.getElementById('btn-start');

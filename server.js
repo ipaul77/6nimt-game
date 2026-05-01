@@ -282,6 +282,38 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('updatePlayers', room.players);
     });
 
+    // 💡 새로운 추방(Kick) 기능 추가
+    socket.on('kickPlayer', (targetId) => {
+        const roomId = socket.roomId;
+        if (!roomId || !rooms[roomId]) return;
+        const room = rooms[roomId];
+
+        const requester = room.players.find(p => p.id === socket.id);
+        if (requester && requester.isHost && !room.isGameRunning) {
+            const targetIndex = room.players.findIndex(p => p.id === targetId);
+            if (targetIndex !== -1) {
+                const targetPlayer = room.players[targetIndex];
+                
+                // 방에서 대상 제거
+                room.players.splice(targetIndex, 1);
+                
+                // 대상이 봇이 아닌 실제 사람이라면 로비로 강제 이동 신호 발송
+                if (!targetPlayer.isBot) {
+                    io.to(targetPlayer.id).emit('kicked');
+                    const targetSocket = io.sockets.sockets.get(targetPlayer.id);
+                    if(targetSocket) {
+                        targetSocket.leave(roomId);
+                        targetSocket.roomId = null;
+                        targetSocket.join('lobby');
+                    }
+                }
+                
+                io.to(roomId).emit('updatePlayers', room.players);
+                broadcastRoomList();
+            }
+        }
+    });
+
     socket.on('toggleReady', () => {
         const roomId = socket.roomId;
         const room = rooms[roomId];
@@ -374,9 +406,7 @@ io.on('connection', (socket) => {
                 delete rooms[roomId]; 
                 broadcastRoomList();
             } else {
-                // 💡 방장이 나갔을 경우 남은 첫 번째 진짜 유저에게 방장 위임
                 if (wasHost) { realPlayers[0].isHost = true; realPlayers[0].isReady = true; }
-                
                 if (room.isGameRunning) {
                     io.to(roomId).emit('systemMessage', `플레이어 이탈로 게임이 중단되었습니다.`);
                     resetRoom(roomId);
