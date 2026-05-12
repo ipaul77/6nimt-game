@@ -74,9 +74,15 @@ function broadcastGameState(roomId) {
         if (!player.isBot) {
             io.to(player.id).emit('updateGame', {
                 rows: room.rows, phase: room.phase, myHand: player.hand, myPenalty: player.penalty,
-                submittedStatus: room.players.map(p => ({
-                    id: p.id, hasSubmitted: room.submittedCards.some(sc => sc.playerId === p.id)
-                })),
+                // 제출된 카드 상태 전송 (PLAYING 단계가 끝나면 카드의 실제 숫자와 정보도 공개)
+                submittedStatus: room.players.map(p => {
+                    const sc = room.submittedCards.find(c => c.playerId === p.id);
+                    return {
+                        id: p.id, 
+                        hasSubmitted: !!sc,
+                        card: (sc && room.phase !== 'PLAYING') ? sc.card : null
+                    };
+                }),
                 playersInfo: room.players.map(p => ({ 
                     id: p.id, name: p.name, avatar: p.avatar, cardCount: p.hand.length, penalty: p.penalty, isHost: p.isHost 
                 }))
@@ -112,14 +118,19 @@ function triggerBots(roomId) {
 
 function checkAllCardsSubmitted(roomId) {
     const room = rooms[roomId];
-    broadcastGameState(roomId); 
-
+    
     if (room.submittedCards.length === room.players.length) {
         room.phase = 'RESOLVING';
         room.submittedCards.sort((a, b) => a.card.number - b.card.number);
         
-        io.to(roomId).emit('systemMessage', `모든 카드가 공개되었습니다! 숫자 순서대로 배치합니다.`);
-        setTimeout(() => processNextCard(roomId), 1500); 
+        broadcastGameState(roomId); // 제출된 카드들의 앞면을 클라이언트에 공개 브로드캐스트
+        
+        io.to(roomId).emit('systemMessage', `모든 카드가 공개되었습니다! (잠시 후 순서대로 배치됩니다)`);
+        
+        // 카드를 확인할 수 있도록 대기 시간을 3.5초로 연장
+        setTimeout(() => processNextCard(roomId), 3500); 
+    } else {
+        broadcastGameState(roomId);
     }
 }
 
@@ -138,7 +149,7 @@ function processNextCard(roomId) {
         return;
     }
 
-    const currentPlay = room.submittedCards.shift();
+    const currentPlay = room.submittedCards.shift(); // 큐에서 빠져나가면 클라이언트 배지에서도 사라짐
     const player = room.players.find(p => p.id === currentPlay.playerId);
     const card = currentPlay.card;
 
@@ -186,7 +197,7 @@ function processNextCard(roomId) {
     }
 
     broadcastGameState(roomId);
-    setTimeout(() => processNextCard(roomId), 1500); 
+    setTimeout(() => processNextCard(roomId), 1200); 
 }
 
 function executeRowSelection(roomId, player, rowIndex, card) {
@@ -204,7 +215,7 @@ function executeRowSelection(roomId, player, rowIndex, card) {
     room.pendingCard = null;
 
     broadcastGameState(roomId);
-    setTimeout(() => processNextCard(roomId), 1500);
+    setTimeout(() => processNextCard(roomId), 1200);
 }
 
 function endRound(roomId) {
@@ -212,7 +223,7 @@ function endRound(roomId) {
     room.isGameRunning = false;
     room.players.sort((a, b) => a.penalty - b.penalty);
     io.to(roomId).emit('gameOver', room.players); 
-    io.to(roomId).emit('systemMessage', `라운드 종료! 1등: ${room.players[0].name} (벌점 ${room.players[0].penalty}점)`);
+    io.to(roomId).emit('systemMessage', `라운드 종료! 누적 1등: ${room.players[0].name} (벌점 ${room.players[0].penalty}점)`);
     broadcastRoomList();
 }
 
@@ -225,7 +236,7 @@ function resetRoom(roomId) {
     room.rows = [[], [], [], []];
     room.players.forEach(p => {
         p.hand = [];
-        p.penalty = 0;
+        // p.penalty = 0; 누적 점수를 위해 리셋 로직 제거
         p.isReady = p.isHost || p.isBot;
     });
     io.to(roomId).emit('gameStopped');
@@ -282,7 +293,6 @@ io.on('connection', (socket) => {
         io.to(roomId).emit('updatePlayers', room.players);
     });
 
-    // 💡 새로운 추방(Kick) 기능 추가
     socket.on('kickPlayer', (targetId) => {
         const roomId = socket.roomId;
         if (!roomId || !rooms[roomId]) return;
@@ -293,11 +303,8 @@ io.on('connection', (socket) => {
             const targetIndex = room.players.findIndex(p => p.id === targetId);
             if (targetIndex !== -1) {
                 const targetPlayer = room.players[targetIndex];
-                
-                // 방에서 대상 제거
                 room.players.splice(targetIndex, 1);
                 
-                // 대상이 봇이 아닌 실제 사람이라면 로비로 강제 이동 신호 발송
                 if (!targetPlayer.isBot) {
                     io.to(targetPlayer.id).emit('kicked');
                     const targetSocket = io.sockets.sockets.get(targetPlayer.id);
@@ -307,7 +314,6 @@ io.on('connection', (socket) => {
                         targetSocket.join('lobby');
                     }
                 }
-                
                 io.to(roomId).emit('updatePlayers', room.players);
                 broadcastRoomList();
             }
@@ -336,7 +342,7 @@ io.on('connection', (socket) => {
         room.players.forEach(p => { 
             p.hand = room.deck.splice(0, 10); 
             p.hand.sort((a, b) => a.number - b.number); 
-            p.penalty = 0; 
+            // p.penalty = 0; 누적 점수 유지를 위해 초기화 제거
         });
         
         room.rows = [[room.deck.pop()], [room.deck.pop()], [room.deck.pop()], [room.deck.pop()]];

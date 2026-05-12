@@ -87,14 +87,17 @@
 
         .play-area-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding-top: 40px; box-sizing: border-box; }
         
-        .opponents-bar { display: flex; overflow-x: auto; gap: 8px; padding: 5px 10px; background: rgba(0,0,0,0.5); min-height: 55px; align-items: center; white-space: nowrap; scrollbar-width: none; border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
+        /* 참가자 목록 영역: 카드가 표시되도록 높이 및 정렬 수정 */
+        .opponents-bar { display: flex; overflow-x: auto; gap: 8px; padding: 5px 10px; background: rgba(0,0,0,0.5); min-height: 85px; align-items: center; white-space: nowrap; scrollbar-width: none; border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
         .opponents-bar::-webkit-scrollbar { display: none; }
         
-        .op-badge { background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 4px 6px; color: white; text-align: center; min-width: 50px; position: relative; backdrop-filter: blur(5px); }
+        .op-badge { display: flex; flex-direction: column; align-items: center; background: linear-gradient(to bottom, rgba(255,255,255,0.1), transparent); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 4px 6px; color: white; min-width: 55px; position: relative; backdrop-filter: blur(5px); }
+        .my-badge { border-color: #00f0ff !important; box-shadow: inset 0 0 10px rgba(0,240,255,0.3); background: rgba(0,240,255,0.1); }
+        .badge-card-zone { height: 42px; display: flex; align-items: center; justify-content: center; margin-bottom: 2px; }
+        .badge-card-zone .card { transform: scale(0.55); transform-origin: center; margin: 0; }
         .op-badge .avatar-icon { font-size: 1.1rem; line-height: 1; margin-bottom: 2px;}
         .op-badge .name { font-size: 0.7rem; margin-bottom: 1px; font-weight: normal; color: #ccc;}
         .op-badge .penalty { font-size: 0.85rem; color: #ff4d4d; font-weight: bold; }
-        .op-badge .status-icon { position: absolute; top: -6px; right: -6px; font-size: 0.9rem; background: #000; border-radius: 50%; border: 1px solid #00f0ff; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;}
 
         .board-rows { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px; padding: 5px 10px; overflow-y: auto; }
         .card-row { display: flex; gap: 5px; background: rgba(0,0,0,0.5); padding: 5px 8px; border-radius: 10px; min-height: 70px; align-items: center; border-left: 4px solid #8a2be2; box-shadow: 0 2px 8px rgba(0,0,0,0.5); transition: all 0.3s; }
@@ -156,7 +159,6 @@
         .winner-title { font-size: 3rem; color: #00f0ff; margin-bottom: 20px; text-shadow: 0 0 20px #00f0ff; font-style: italic; }
         .ranking-list { background: rgba(138,43,226,0.1); border: 1px solid rgba(138,43,226,0.5); padding: 20px; border-radius: 15px; text-align: left; margin-bottom: 30px; font-size: 1.2rem; line-height: 2; width: 85%; max-width: 350px; box-shadow: 0 0 30px rgba(0,0,0,0.8); }
         
-        /* 추방 버튼 스타일 */
         .kick-btn { background: #ff007a; border: none; color: white; border-radius: 5px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(255,0,122,0.5); transition: 0.2s;}
         .kick-btn:active { transform: scale(0.9); }
     </style>
@@ -166,7 +168,7 @@
     <div id="penalty-flash-overlay"><div id="penalty-popup-text"></div></div>
     
     <div id="winner-screen">
-        <h1 class="winner-title">라운드 종료!</h1>
+        <h1 class="winner-title">누적 랭킹 결과!</h1>
         <div class="ranking-list" id="ranking-list"></div>
         <button id="btn-return-lobby" onclick="requestReturnToLobby()" class="casino-btn" style="max-width: 250px; display: none;">대기실로 돌아가기</button>
         <p id="wait-return-msg" style="display:none; color: #d8b4fe;">방장이 대기실로 돌아가기를 기다리는 중입니다...</p>
@@ -256,7 +258,7 @@
         let previousPhase = 'WAITING'; 
         let hasSubmittedThisTurn = false;
         let isFirstTurn = true; 
-        let localMyPenalty = 0; 
+        let localMyPenalty = null; 
         
         let currentBotCountInput = 1;
         function changeBotCount(delta) {
@@ -383,7 +385,6 @@
         socket.on('systemMessage', showToast);
         socket.on('joinError', (msg) => alert(msg));
         
-        // 강제 추방 알림
         socket.on('kicked', () => {
             alert('방장에 의해 대기실에서 추방되었습니다.');
             location.reload(); 
@@ -440,7 +441,6 @@
             if (currentBotCountInput > 0) socket.emit('addBots', currentBotCountInput); 
         }
         
-        // 💡 봇/참가자 추방 로직
         function kickPlayer(playerId) {
             if (confirm('이 참가자(또는 봇)를 추방하시겠습니까?')) {
                 socket.emit('kickPlayer', playerId);
@@ -448,7 +448,6 @@
         }
 
         socket.on('updatePlayers', (players) => {
-            // 방장 권한 조기 업데이트 (UI 그리기 전)
             const me = players.find(p => p.id === socket.id);
             if (me && me.isHost && !amIHost) {
                 amIHost = true;
@@ -468,7 +467,6 @@
             players.forEach(p => { 
                 if (!p.isReady) allReady = false;
                 
-                // 💡 방장일 경우 닉네임 우측에 추방 버튼 추가
                 const kickBtnHtml = (amIHost && !p.isHost) 
                     ? `<button onclick="kickPlayer('${p.id}')" class="kick-btn">추방</button>` : '';
 
@@ -498,7 +496,6 @@
             document.getElementById('play-area').style.display = 'flex'; 
             document.getElementById('winner-screen').style.display = 'none';
             if (amIHost) document.getElementById('stop-game-btn').style.display = 'block'; 
-            localMyPenalty = 0; 
         });
 
         socket.on('gameStopped', () => {
@@ -554,30 +551,53 @@
             }
             previousPhase = currentPhase; 
 
-            if (state.myPenalty > localMyPenalty) {
+            if (localMyPenalty === null) {
+                localMyPenalty = state.myPenalty;
+            } else if (state.myPenalty > localMyPenalty) {
                 const penaltyDiff = state.myPenalty - localMyPenalty;
                 triggerPenaltyFlash(penaltyDiff);
                 localMyPenalty = state.myPenalty;
-            } else if (state.myPenalty === 0) {
-                localMyPenalty = 0; 
+            } else if (state.myPenalty < localMyPenalty) {
+                localMyPenalty = state.myPenalty; 
             }
 
             document.getElementById('my-penalty-display').textContent = `내 벌점: ${state.myPenalty} 🐂`;
 
+            // 모든 플레이어(본인 포함)의 제출 카드를 상단 프로필 바에 렌더링
             const opponentsBar = document.getElementById('opponents-bar'); opponentsBar.innerHTML = '';
             state.playersInfo.forEach(p => {
-                if(p.id === socket.id) return;
                 const pStatus = state.submittedStatus.find(s => s.id === p.id);
                 const hasSubmitted = pStatus ? pStatus.hasSubmitted : false;
-                const statusEmoji = hasSubmitted ? '✅' : '🤔';
+                const revealedCard = pStatus ? pStatus.card : null;
 
-                opponentsBar.innerHTML += `
-                    <div class="op-badge">
-                        <div class="status-icon" style="color: ${hasSubmitted ? '#00ff87' : '#fff'}; border-color: ${hasSubmitted ? '#00ff87' : '#555'}">${statusEmoji}</div>
-                        <div class="avatar-icon">${p.avatar}</div>
-                        <div class="name">${p.name}</div>
-                        <div class="penalty">🐂 ${p.penalty}</div>
-                    </div>`;
+                const badge = document.createElement('div');
+                badge.className = `op-badge ${p.id === socket.id ? 'my-badge' : ''}`;
+
+                const cardZone = document.createElement('div');
+                cardZone.className = 'badge-card-zone';
+                
+                // 공개 단계이면 실제 카드, 아니면 카드 뒷면 또는 대기 이모지 표시
+                if (revealedCard) {
+                    const c = createCardDOM(revealedCard, false);
+                    cardZone.appendChild(c);
+                } else if (hasSubmitted) {
+                    const c = createCardDOM({}, false, true);
+                    cardZone.appendChild(c);
+                } else {
+                    cardZone.innerHTML = currentPhase === 'PLAYING' 
+                        ? '<div style="font-size:1.2rem; opacity:0.5;">🤔</div>' 
+                        : '<div style="font-size:1.2rem; opacity:0.5;">⏳</div>';
+                }
+
+                const infoHtml = `
+                    <div class="avatar-icon">${p.avatar}</div>
+                    <div class="name">${p.id === socket.id ? '나 ('+p.name+')' : p.name}</div>
+                    <div class="penalty">🐂 ${p.penalty}</div>
+                `;
+                
+                badge.appendChild(cardZone);
+                badge.insertAdjacentHTML('beforeend', infoHtml);
+                opponentsBar.appendChild(badge);
             });
 
             const boardRows = document.getElementById('board-rows'); boardRows.innerHTML = '';
