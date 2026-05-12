@@ -87,7 +87,6 @@
 
         .play-area-layout { display: flex; flex-direction: column; width: 100%; height: 100%; padding-top: 40px; box-sizing: border-box; }
         
-        /* 참가자 목록 영역: 카드가 표시되도록 높이 및 정렬 수정 */
         .opponents-bar { display: flex; overflow-x: auto; gap: 8px; padding: 5px 10px; background: rgba(0,0,0,0.5); min-height: 85px; align-items: center; white-space: nowrap; scrollbar-width: none; border-bottom: 1px solid rgba(138, 43, 226, 0.3); }
         .opponents-bar::-webkit-scrollbar { display: none; }
         
@@ -119,35 +118,13 @@
 
         #penalty-flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999; display: none; align-items: center; justify-content: center; background: transparent; }
         .flash-active { display: flex !important; animation: doomFlashAnim 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-        @keyframes doomFlashAnim { 
-            0% { background: rgba(255, 0, 0, 0.85); box-shadow: inset 0 0 100px #ff0000; } 
-            20% { background: rgba(255, 0, 122, 0.5); }
-            100% { background: rgba(255, 0, 122, 0); box-shadow: none; } 
-        }
+        @keyframes doomFlashAnim { 0% { background: rgba(255, 0, 0, 0.85); box-shadow: inset 0 0 100px #ff0000; } 20% { background: rgba(255, 0, 122, 0.5); } 100% { background: rgba(255, 0, 122, 0); box-shadow: none; } }
         
         #penalty-popup-text { font-size: 4rem; font-weight: 900; color: #fff; text-shadow: 0 0 40px #ff0000, 0 0 20px #ff007a, 4px 4px 0 #000; opacity: 0; transform: scale(0.5); text-align: center; line-height: 1.1; }
         .text-pop { animation: doomTextAnim 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-        @keyframes doomTextAnim { 
-            0% { opacity: 1; transform: scale(0.1) translateY(100px) rotate(-15deg); filter: blur(5px); } 
-            15% { transform: scale(1.3) translateY(0) rotate(5deg); filter: blur(0); } 
-            30% { transform: scale(1.1) translateY(0) rotate(0deg); } 
-            80% { opacity: 1; transform: scale(1.1) translateY(0); filter: blur(0); } 
-            100% { opacity: 0; transform: scale(2) translateY(-100px); filter: blur(10px); } 
-        }
+        @keyframes doomTextAnim { 0% { opacity: 1; transform: scale(0.1) translateY(100px) rotate(-15deg); filter: blur(5px); } 15% { transform: scale(1.3) translateY(0) rotate(5deg); filter: blur(0); } 30% { transform: scale(1.1) translateY(0) rotate(0deg); } 80% { opacity: 1; transform: scale(1.1) translateY(0); filter: blur(0); } 100% { opacity: 0; transform: scale(2) translateY(-100px); filter: blur(10px); } }
         
-        @keyframes earthquake {
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            10% { transform: translate(-3px, -2px) rotate(-1deg); }
-            20% { transform: translate(-5px, 0px) rotate(1deg); }
-            30% { transform: translate(5px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -3px) rotate(1deg); }
-            50% { transform: translate(-3px, 5px) rotate(-1deg); }
-            60% { transform: translate(-5px, 1px) rotate(0deg); }
-            70% { transform: translate(5px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -2px) rotate(1deg); }
-            90% { transform: translate(2px, 5px) rotate(0deg); }
-            100% { transform: translate(0px, 0px) rotate(0deg); }
-        }
+        @keyframes earthquake { 0% { transform: translate(2px, 1px) rotate(0deg); } 10% { transform: translate(-3px, -2px) rotate(-1deg); } 20% { transform: translate(-5px, 0px) rotate(1deg); } 30% { transform: translate(5px, 2px) rotate(0deg); } 40% { transform: translate(1px, -3px) rotate(1deg); } 50% { transform: translate(-3px, 5px) rotate(-1deg); } 60% { transform: translate(-5px, 1px) rotate(0deg); } 70% { transform: translate(5px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -2px) rotate(1deg); } 90% { transform: translate(2px, 5px) rotate(0deg); } 100% { transform: translate(0px, 0px) rotate(0deg); } }
         .earthquake-shake { animation: earthquake 0.5s; }
 
         #toast-container { position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px;}
@@ -161,6 +138,13 @@
         
         .kick-btn { background: #ff007a; border: none; color: white; border-radius: 5px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(255,0,122,0.5); transition: 0.2s;}
         .kick-btn:active { transform: scale(0.9); }
+
+        /* 💡 튜토리얼 모달 스타일 추가 */
+        .tutorial-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
+        .tutorial-content { background: #110524; border: 2px solid #00f0ff; border-radius: 15px; padding: 25px; max-width: 90%; width: 400px; color: white; text-align: left; position: relative; box-shadow: 0 0 30px rgba(0,240,255,0.3); max-height: 80vh; overflow-y: auto; }
+        .tutorial-content h3 { color: #ff007a; margin: 0 0 10px 0; }
+        .tutorial-content hr { border: 0; border-top: 1px solid rgba(138, 43, 226, 0.5); margin: 15px 0; }
+        .tutorial-close-btn { width: 100%; padding: 12px; margin-top: 20px; background: #00f0ff; color: #000; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; font-size: 1.1rem; }
     </style>
 </head>
 <body>
@@ -172,6 +156,23 @@
         <div class="ranking-list" id="ranking-list"></div>
         <button id="btn-return-lobby" onclick="requestReturnToLobby()" class="casino-btn" style="max-width: 250px; display: none;">대기실로 돌아가기</button>
         <p id="wait-return-msg" style="display:none; color: #d8b4fe;">방장이 대기실로 돌아가기를 기다리는 중입니다...</p>
+    </div>
+
+    <div id="tutorial-modal" class="tutorial-modal">
+        <div class="tutorial-content">
+            <h2 style="color: #00f0ff; text-align: center; margin-top: 0; font-style: italic;">📜 게임 방법</h2>
+            <div style="line-height: 1.6; font-size: 0.95rem;">
+                <p><strong>🎯 목표:</strong> 벌점(소머리 🐂)을 가장 적게 받는 사람이 승리합니다.</p>
+                <p><strong>1. 카드 제출:</strong> 매 턴마다 모든 플레이어는 비공개로 카드를 1장씩 선택합니다.</p>
+                <p><strong>2. 자동 배치:</strong> 모두가 카드를 내면, <strong>가장 작은 숫자를 낸 사람부터</strong> 오름차순으로 카드가 바닥에 깔립니다.</p>
+                <p><strong>3. 배치 규칙:</strong> 카드는 자신이 낸 숫자보다 <strong>작으면서 가장 가까운</strong> 숫자가 있는 행의 맨 끝에 붙습니다.</p>
+                <hr>
+                <h3>🚨 벌점을 먹는 경우</h3>
+                <p><strong>💣 6번째 카드:</strong> 어떤 행에 <strong>6번째</strong> 카드를 놓게 되면, 앞의 5장을 벌점으로 가져가고 내 카드가 그 행의 새로운 시작이 됩니다.</p>
+                <p><strong>🤏 너무 작은 카드:</strong> 내가 낸 카드가 바닥의 어떤 마지막 카드보다도 작다면, <strong>원하는 행을 하나 골라</strong> 벌점으로 모두 가져가고 내 카드를 놓아야 합니다.</p>
+            </div>
+            <button class="tutorial-close-btn" onclick="hideTutorial()">확인</button>
+        </div>
     </div>
 
     <div class="login-container" id="login-area">
@@ -189,12 +190,14 @@
 
         <input type="text" id="nickname-input" placeholder="닉네임을 입력하세요">
         <button class="casino-btn" onclick="enterMainLobby()">로비 입장</button>
+        <button class="top-btn" onclick="showTutorial()" style="margin-top: 15px; width: 100%; background: transparent; border-color: #00f0ff; color: #00f0ff; padding: 10px;">❓ 게임 방법 보기</button>
     </div>
 
     <div class="lobby-container" id="main-lobby-area" style="display: none;">
         <h2 style="color: #fff;">게임 로비</h2>
         <div class="room-list" id="room-list"></div>
         <button class="casino-btn btn-start" onclick="createNewRoom()">+ 새 방 만들기</button>
+        <button class="top-btn" onclick="showTutorial()" style="margin-top: 15px; width: 100%; background: transparent; border-color: #00f0ff; color: #00f0ff; padding: 10px;">❓ 게임 방법 보기</button>
     </div>
 
     <div class="casino-table" id="game-area" style="display:none;">
@@ -261,6 +264,11 @@
         let localMyPenalty = null; 
         
         let currentBotCountInput = 1;
+
+        // 💡 튜토리얼 팝업 열기/닫기 함수
+        function showTutorial() { document.getElementById('tutorial-modal').style.display = 'flex'; }
+        function hideTutorial() { document.getElementById('tutorial-modal').style.display = 'none'; }
+
         function changeBotCount(delta) {
             forceUnlockAudio(); 
             currentBotCountInput += delta;
@@ -561,9 +569,8 @@
                 localMyPenalty = state.myPenalty; 
             }
 
-            document.getElementById('my-penalty-display').textContent = `내 벌점: ${state.myPenalty} 🐂`;
+            document.getElementById('my-penalty-display').textContent = `누적 벌점: ${state.myPenalty} 🐂`;
 
-            // 모든 플레이어(본인 포함)의 제출 카드를 상단 프로필 바에 렌더링
             const opponentsBar = document.getElementById('opponents-bar'); opponentsBar.innerHTML = '';
             state.playersInfo.forEach(p => {
                 const pStatus = state.submittedStatus.find(s => s.id === p.id);
@@ -576,7 +583,6 @@
                 const cardZone = document.createElement('div');
                 cardZone.className = 'badge-card-zone';
                 
-                // 공개 단계이면 실제 카드, 아니면 카드 뒷면 또는 대기 이모지 표시
                 if (revealedCard) {
                     const c = createCardDOM(revealedCard, false);
                     cardZone.appendChild(c);
