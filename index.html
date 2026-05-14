@@ -24,7 +24,6 @@
             box-sizing: border-box; text-align: center; 
             background: linear-gradient(145deg, #2a114f, #110524); 
             display: flex; flex-direction: column; overflow: hidden; position: relative;
-            transition: box-shadow 0.5s; /* 💡 심장박동 시 붉은 안개 효과를 위한 트랜지션 */
         }
         @media (min-width: 800px) { .casino-table { height: 95dvh; border-radius: 20px; border: 2px solid #8a2be2; margin: 2.5dvh 0; box-shadow: 0 0 30px rgba(138, 43, 226, 0.4); } }
 
@@ -119,35 +118,13 @@
 
         #penalty-flash-overlay { position: fixed; top:0; left:0; width:100%; height:100%; pointer-events: none; z-index: 9999; display: none; align-items: center; justify-content: center; background: transparent; }
         .flash-active { display: flex !important; animation: doomFlashAnim 1.2s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-        @keyframes doomFlashAnim { 
-            0% { background: rgba(255, 0, 0, 0.85); box-shadow: inset 0 0 100px #ff0000; } 
-            20% { background: rgba(255, 0, 122, 0.5); }
-            100% { background: rgba(255, 0, 122, 0); box-shadow: none; } 
-        }
+        @keyframes doomFlashAnim { 0% { background: rgba(255, 0, 0, 0.85); box-shadow: inset 0 0 100px #ff0000; } 20% { background: rgba(255, 0, 122, 0.5); } 100% { background: rgba(255, 0, 122, 0); box-shadow: none; } }
         
         #penalty-popup-text { font-size: 4rem; font-weight: 900; color: #fff; text-shadow: 0 0 40px #ff0000, 0 0 20px #ff007a, 4px 4px 0 #000; opacity: 0; transform: scale(0.5); text-align: center; line-height: 1.1; }
         .text-pop { animation: doomTextAnim 1.5s cubic-bezier(0.1, 0.9, 0.2, 1) forwards; }
-        @keyframes doomTextAnim { 
-            0% { opacity: 1; transform: scale(0.1) translateY(100px) rotate(-15deg); filter: blur(5px); } 
-            15% { transform: scale(1.3) translateY(0) rotate(5deg); filter: blur(0); } 
-            30% { transform: scale(1.1) translateY(0) rotate(0deg); } 
-            80% { opacity: 1; transform: scale(1.1) translateY(0); filter: blur(0); } 
-            100% { opacity: 0; transform: scale(2) translateY(-100px); filter: blur(10px); } 
-        }
+        @keyframes doomTextAnim { 0% { opacity: 1; transform: scale(0.1) translateY(100px) rotate(-15deg); filter: blur(5px); } 15% { transform: scale(1.3) translateY(0) rotate(5deg); filter: blur(0); } 30% { transform: scale(1.1) translateY(0) rotate(0deg); } 80% { opacity: 1; transform: scale(1.1) translateY(0); filter: blur(0); } 100% { opacity: 0; transform: scale(2) translateY(-100px); filter: blur(10px); } }
         
-        @keyframes earthquake {
-            0% { transform: translate(2px, 1px) rotate(0deg); }
-            10% { transform: translate(-3px, -2px) rotate(-1deg); }
-            20% { transform: translate(-5px, 0px) rotate(1deg); }
-            30% { transform: translate(5px, 2px) rotate(0deg); }
-            40% { transform: translate(1px, -3px) rotate(1deg); }
-            50% { transform: translate(-3px, 5px) rotate(-1deg); }
-            60% { transform: translate(-5px, 1px) rotate(0deg); }
-            70% { transform: translate(5px, 1px) rotate(-1deg); }
-            80% { transform: translate(-1px, -2px) rotate(1deg); }
-            90% { transform: translate(2px, 5px) rotate(0deg); }
-            100% { transform: translate(0px, 0px) rotate(0deg); }
-        }
+        @keyframes earthquake { 0% { transform: translate(2px, 1px) rotate(0deg); } 10% { transform: translate(-3px, -2px) rotate(-1deg); } 20% { transform: translate(-5px, 0px) rotate(1deg); } 30% { transform: translate(5px, 2px) rotate(0deg); } 40% { transform: translate(1px, -3px) rotate(1deg); } 50% { transform: translate(-3px, 5px) rotate(-1deg); } 60% { transform: translate(-5px, 1px) rotate(0deg); } 70% { transform: translate(5px, 1px) rotate(-1deg); } 80% { transform: translate(-1px, -2px) rotate(1deg); } 90% { transform: translate(2px, 5px) rotate(0deg); } 100% { transform: translate(0px, 0px) rotate(0deg); } }
         .earthquake-shake { animation: earthquake 0.5s; }
 
         #toast-container { position: fixed; top: 35%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; display: flex; flex-direction: column; gap: 10px; pointer-events: none; width: 90%; max-width: 350px;}
@@ -162,6 +139,7 @@
         .kick-btn { background: #ff007a; border: none; color: white; border-radius: 5px; padding: 4px 10px; font-weight: bold; cursor: pointer; font-size: 0.8rem; box-shadow: 0 2px 5px rgba(255,0,122,0.5); transition: 0.2s;}
         .kick-btn:active { transform: scale(0.9); }
 
+        /* 💡 튜토리얼 모달 스타일 추가 */
         .tutorial-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 3000; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .tutorial-content { background: #110524; border: 2px solid #00f0ff; border-radius: 15px; padding: 25px; max-width: 90%; width: 400px; color: white; text-align: left; position: relative; box-shadow: 0 0 30px rgba(0,240,255,0.3); max-height: 80vh; overflow-y: auto; }
         .tutorial-content h3 { color: #ff007a; margin: 0 0 10px 0; }
@@ -287,112 +265,102 @@
         
         let currentBotCountInput = 1;
 
-        // 💡 튜토리얼 팝업 열기/닫기
+        // 💡 튜토리얼 팝업 열기/닫기 함수
         function showTutorial() { document.getElementById('tutorial-modal').style.display = 'flex'; }
         function hideTutorial() { document.getElementById('tutorial-modal').style.display = 'none'; }
 
-        // ========================== [오디오 & 심장박동 & TTS 로직] ========================== //
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx;
-        let heartbeatTimeout = null;
+        function changeBotCount(delta) {
+            forceUnlockAudio(); 
+            currentBotCountInput += delta;
+            if (currentBotCountInput < 1) currentBotCountInput = 1;
+            if (currentBotCountInput > 9) currentBotCountInput = 9;
+            document.getElementById('bot-count-display').textContent = currentBotCountInput;
+        }
 
-        // 💡 1. 모바일 강제 락 해제 로직
-        function initAndUnlockAudio() {
-            if (!audioCtx) audioCtx = new AudioCtx();
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        let isAudioUnlocked = false;
+
+        function forceUnlockAudio() {
+            if (isAudioUnlocked) return;
+            if (!audioCtx) audioCtx = new AudioContext();
             if (audioCtx.state === 'suspended') audioCtx.resume();
             
-            // Web Audio 무음 파동
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             gain.gain.value = 0; 
             osc.connect(gain); gain.connect(audioCtx.destination);
             osc.start(0); osc.stop(audioCtx.currentTime + 0.1);
 
-            // iOS 사파리 TTS 강제 락 해제
             if (window.speechSynthesis) {
-                window.speechSynthesis.resume();
-                const msg = new SpeechSynthesisUtterance(''); msg.volume = 0; 
-                window.speechSynthesis.speak(msg);
+                const unlockMsg = new SpeechSynthesisUtterance("unlock");
+                unlockMsg.volume = 0; 
+                window.speechSynthesis.speak(unlockMsg);
             }
-
-            window.removeEventListener('touchstart', initAndUnlockAudio);
-            window.removeEventListener('click', initAndUnlockAudio);
+            isAudioUnlocked = true;
         }
 
-        // 어떤 화면이든 첫 터치 시 오디오 깨우기
-        window.addEventListener('touchstart', initAndUnlockAudio, { once: true });
-        window.addEventListener('click', initAndUnlockAudio, { once: true });
-
-        // 💡 2. 동적 심장박동 (Heartbeat) 생성 함수
-        function playHeartbeat(bpm) {
-            if(!audioCtx) return;
-            if (audioCtx.state === 'suspended') audioCtx.resume(); 
-            
-            if(heartbeatTimeout) clearTimeout(heartbeatTimeout);
-            
-            const duration = 60 / bpm;
-            const now = audioCtx.currentTime;
-            
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine'; 
-            osc.frequency.setValueAtTime(50, now); 
-            osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-            gain.gain.setValueAtTime(0.8, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
-            
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now + 0.15);
-            
-            heartbeatTimeout = setTimeout(() => playHeartbeat(bpm), duration * 1000);
+        function wakeUpAudio() {
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
 
-        function stopHeartbeat() { 
-            if(heartbeatTimeout) clearTimeout(heartbeatTimeout);
-            const playArea = document.getElementById('play-area');
-            if(playArea) playArea.style.boxShadow = "none";
-        }
-
-        // 💡 3. AI 캐릭터 성격별 TTS (음성 합성)
-        function speakBot(name, text) {
-            if (!window.speechSynthesis) return;
-            window.speechSynthesis.resume(); 
-
-            const msg = new SpeechSynthesisUtterance(text);
-            msg.lang = 'ko-KR';
-            
-            if(name.includes('극대노')) { msg.pitch = 1.6; msg.rate = 1.4; }
-            else if(name.includes('소심한')) { msg.pitch = 1.3; msg.rate = 0.8; }
-            else if(name.includes('깐족')) { msg.pitch = 1.1; msg.rate = 1.3; }
-            else if(name.includes('흑염룡')) { msg.pitch = 0.5; msg.rate = 0.7; }
-            else if(name.includes('이장님')) { msg.pitch = 0.7; msg.rate = 0.6; }
-            else if(name.includes('알파고')) { msg.pitch = 1.0; msg.rate = 1.0; }
-            
+        function playStartVoice() {
+            if(!window.speechSynthesis) return;
+            const msg = new SpeechSynthesisUtterance("Start");
+            msg.lang = 'en-US'; msg.rate = 1.1; msg.pitch = 1.0;
             window.speechSynthesis.speak(msg);
         }
 
-        // 💡 4. 카드 타격 및 벌점 효과음
-        socket.on('actionSound', (type) => {
-            if(!audioCtx) return;
-            if(audioCtx.state === 'suspended') audioCtx.resume();
+        function playNextVoice() {
+            if(!window.speechSynthesis) return;
+            const msg = new SpeechSynthesisUtterance("Next");
+            msg.lang = 'en-US'; msg.rate = 1.1; msg.pitch = 0.9;
+            window.speechSynthesis.speak(msg);
+        }
 
+        function playCardSlapSound() {
+            if (!audioCtx) return;
+            wakeUpAudio(); 
             const now = audioCtx.currentTime;
-            const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            if(type==='play') { 
-                osc.type='sine'; osc.frequency.setValueAtTime(150, now); 
-                osc.frequency.exponentialRampToValueAtTime(40, now+0.1); 
-                g.gain.setValueAtTime(0.3, now); 
-            } else { 
-                osc.type='sawtooth'; osc.frequency.setValueAtTime(100, now); 
-                osc.frequency.linearRampToValueAtTime(20, now+0.5); 
-                g.gain.setValueAtTime(0.5, now); 
-            }
-            g.gain.exponentialRampToValueAtTime(0.01, now+0.2);
-            osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(now); osc.stop(now+0.5);
-        });
+            const bufferSize = audioCtx.sampleRate * 0.05; 
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+            
+            const noise = audioCtx.createBufferSource();
+            noise.buffer = buffer;
+            const noiseFilter = audioCtx.createBiquadFilter();
+            noiseFilter.type = 'lowpass'; noiseFilter.frequency.value = 800; 
+            const noiseGain = audioCtx.createGain();
+            noiseGain.gain.setValueAtTime(0.4, now); noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+            noise.connect(noiseFilter); noiseFilter.connect(noiseGain); noiseGain.connect(audioCtx.destination);
+            noise.start(now);
 
-        // 💡 벌점 폭탄 애니메이션
+            const osc = audioCtx.createOscillator();
+            const oscGain = audioCtx.createGain();
+            osc.type = 'sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now + 0.15); 
+            oscGain.gain.setValueAtTime(0.8, now); oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.connect(oscGain); oscGain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.15);
+
+            const board = document.getElementById('board-rows');
+            board.classList.remove('board-shake'); void board.offsetWidth; board.classList.add('board-shake');
+        }
+
+        function playPenaltySound() {
+            if (!audioCtx) return;
+            wakeUpAudio(); 
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(20, now + 0.5); 
+            gain.gain.setValueAtTime(1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now); osc.stop(now + 0.5);
+        }
+
         function triggerPenaltyFlash(penaltyAmount) {
             const overlay = document.getElementById('penalty-flash-overlay');
             const textEl = document.getElementById('penalty-popup-text');
@@ -410,14 +378,11 @@
             }
         }
 
-        // ========================== [UI 및 게임 로직] ========================== //
-        function changeBotCount(delta) {
-            initAndUnlockAudio(); 
-            currentBotCountInput += delta;
-            if (currentBotCountInput < 1) currentBotCountInput = 1;
-            if (currentBotCountInput > 9) currentBotCountInput = 9;
-            document.getElementById('bot-count-display').textContent = currentBotCountInput;
-        }
+        socket.on('actionSound', (type) => {
+            wakeUpAudio();
+            if (type === 'play') playCardSlapSound();
+            else if (type === 'penalty') playPenaltySound();
+        });
 
         function showToast(msg) {
             const container = document.getElementById('toast-container');
@@ -425,17 +390,7 @@
             container.appendChild(toast); setTimeout(() => { toast.remove(); }, 3000); 
         }
 
-        socket.on('systemMessage', (msg) => {
-            showToast(msg);
-            // 💡 서버에서 보낸 AI 대사 추출 및 TTS 재생
-            if(msg.includes('💬')) {
-                const namePart = msg.split(':')[0];
-                const name = namePart ? namePart.replace('💬 ', '') : '';
-                const content = msg.split('"')[1];
-                if(content) speakBot(name, content);
-            }
-        });
-
+        socket.on('systemMessage', showToast);
         socket.on('joinError', (msg) => alert(msg));
         
         socket.on('kicked', () => {
@@ -450,7 +405,7 @@
         }
 
         function enterMainLobby() {
-            initAndUnlockAudio(); 
+            forceUnlockAudio(); 
             myNickname = document.getElementById('nickname-input').value.trim();
             if (!myNickname) return alert('닉네임을 입력해주세요.');
             document.getElementById('login-area').style.display = 'none';
@@ -484,7 +439,6 @@
         });
 
         function toggleReady() {
-            initAndUnlockAudio();
             isReady = !isReady; socket.emit('toggleReady');
             const btn = document.getElementById('btn-ready');
             btn.classList.toggle('active', isReady);
@@ -492,7 +446,6 @@
         }
 
         function addBots() { 
-            initAndUnlockAudio();
             if (currentBotCountInput > 0) socket.emit('addBots', currentBotCountInput); 
         }
         
@@ -542,7 +495,7 @@
             }
         });
 
-        function startGame() { initAndUnlockAudio(); socket.emit('startGame'); }
+        function startGame() { forceUnlockAudio(); socket.emit('startGame'); }
         function stopGame() { if(confirm('게임을 중단합니까?')) socket.emit('stopGame'); }
         function requestReturnToLobby() { socket.emit('returnToLobby'); }
 
@@ -599,6 +552,11 @@
 
         socket.on('updateGame', (state) => {
             currentPhase = state.phase;
+
+            if (previousPhase !== 'PLAYING' && currentPhase === 'PLAYING') {
+                if (isFirstTurn) { playStartVoice(); isFirstTurn = false; } 
+                else { playNextVoice(); }
+            }
             previousPhase = currentPhase; 
 
             if (localMyPenalty === null) {
@@ -612,17 +570,6 @@
             }
 
             document.getElementById('my-penalty-display').textContent = `누적 벌점: ${state.myPenalty} 🐂`;
-
-            // 💡 심장박동 (위험 행 개수에 따라)
-            const dangers = state.rows.filter(r=>r.length===5).length;
-            const playArea = document.getElementById('play-area');
-            if(dangers > 0) {
-                const bpm = 60 + (dangers * 30);
-                playHeartbeat(bpm);
-                playArea.style.boxShadow = `inset 0 0 ${dangers*20}px rgba(255,0,0,0.5)`;
-            } else {
-                stopHeartbeat();
-            }
 
             const opponentsBar = document.getElementById('opponents-bar'); opponentsBar.innerHTML = '';
             state.playersInfo.forEach(p => {
@@ -693,7 +640,6 @@
                     const cardDOM = createCardDOM(card, isPlayable);
                     cardDOM.onclick = () => {
                         if (isPlayable && !hasSubmittedThisTurn) {
-                            initAndUnlockAudio(); // 💡 카드 낼 때도 안전장치 가동
                             hasSubmittedThisTurn = true;
                             playCardSlapSound();
                             cardDOM.classList.add('flying');
@@ -739,7 +685,6 @@
         });
 
         socket.on('gameOver', (sortedPlayers) => { 
-            stopHeartbeat();
             const listDiv = document.getElementById('ranking-list');
             listDiv.innerHTML = '';
             sortedPlayers.forEach((p, idx) => {
@@ -748,7 +693,6 @@
             });
 
             document.getElementById('winner-screen').style.display = 'flex';
-            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             
             if (amIHost) {
                 document.getElementById('btn-return-lobby').style.display = 'block';
