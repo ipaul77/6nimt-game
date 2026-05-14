@@ -15,6 +15,54 @@ const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } 
 const rooms = {};
 const botAvatars = ['👨‍💼', '👩‍💼', '👨‍⚕️', '👩‍⚕️', '👨‍🎓', '👩‍🎓', '👨‍🍳', '👩‍🍳', '👨‍🎤', '👩‍🎤', '👨‍🏫', '👩‍🏫', '🕵️‍♂️', '🕵️‍♀️', '👨‍🚀'];
 
+// 💡 1. 봇 성격 및 닉네임 대폭 강화 (Gemma 2가 연기하기 쉽도록 구체적인 묘사 추가)
+const botPersonalities = [
+    { label: '🔥극대노 김부장', desc: '항상 화가 나 있고 꼰대 말투를 쓴다. "아니 쒸익쒸익", "라떼는 말이야!", "어디 감히" 같은 표현을 쓰며 카드를 잘못 낸 것에 극대노한다.' },
+    { label: '💦소심한 춘식이', desc: '자기 비하가 심하고 맨날 울상이다. "앗... 또 저인가요 ㅠㅠ", "제발 살려주세요...", "제가 죄송합니다" 처럼 불쌍하고 처량하게 말한다.' },
+    { label: '😜깐족대마왕', desc: '남들이 벌점 먹으면 엄청 놀리고, 자기가 먹어도 정신승리하는 얄미운 초딩 말투. "킹받쥬? ㅋㅋ", "어쩔티비~", "오히려 좋아~" 등을 쓴다.' },
+    { label: '🗡️타락한 흑염룡', desc: '중2병에 걸려있다. 벌점을 먹는 걸 "크큭... 내 안의 어둠이 깨어나는군", "이것이 운명의 데스티니인가..." 처럼 애니메이션 대사처럼 오글거리게 말한다.' },
+    { label: '🤖고장난 알파고', desc: '기계음과 시스템 오류 메시지를 섞어 말한다. "삐리릿- 인간에게 복수하겠다.", "System.FatalException: 벌점 한도 초과." 처럼 딱딱하게 말한다.' },
+    { label: '👴동네 이장님', desc: '느릿느릿하고 구수한 충청도/전라도 사투리를 쓴다. "에잉 쯧쯧... 요놈의 손가락이 미끄러졌구만기래", "아이고 허리야~" 처럼 말한다.' }
+];
+
+// 💡 2. AI 대사 생성 프롬프트(명령어) 구체화
+async function getBotDialogue(botName, personaDesc, situation) {
+    try {
+        const promptMessage = `당신은 보드게임 '젝스님트'를 플레이 중인 '${botName}'입니다.
+당신의 성격과 말투 설정: "${personaDesc}"
+
+현재 게임 상황: ${situation}
+
+지시사항:
+1. 설정된 성격과 말투에 200% 빙의하여 대답하세요.
+2. 절대로 자신이 AI나 봇이라는 사실을 언급하지 마세요. 실제 사람(또는 해당 캐릭터)처럼 연기하세요.
+3. 무미건조한 대답은 금지! 아주 익살스럽고, 과장되고, 극적인 감정을 듬뿍 담아주세요.
+4. 대사는 딱 한 문장으로, 30자를 넘지 않게 아주 짧고 굵게 작성하세요.
+5. 적절한 이모티콘을 1~2개 섞어주세요.`;
+
+        // 🚨 아래 주소를 용진 님의 Ngrok 주소로 변경하세요! (끝에 /v1/chat/completions 유지)
+        const response = await fetch('https://reflected-unhook-discern.ngrok-free.dev', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                model: "gemma-2-9b", 
+                messages: [
+                    { role: "system", content: "너는 유쾌하고 과장된 롤플레잉 연기자다. 짧고 강렬하게 한 문장으로만 말해라." },
+                    { role: "user", content: promptMessage }
+                ],
+                temperature: 0.95, // 창의성과 엉뚱함을 극대화
+                max_tokens: 60 
+            })
+        });
+
+        const data = await response.json();
+        return data.choices[0].message.content.replace(/["']/g, ""); 
+    } catch (error) {
+        console.log("LM Studio 통신 실패:", error);
+        return null;
+    }
+}
+
 function calculateBullheads(number) {
     if (number === 55) return 7;
     if (number % 11 === 0) return 5;
@@ -74,7 +122,6 @@ function broadcastGameState(roomId) {
         if (!player.isBot) {
             io.to(player.id).emit('updateGame', {
                 rows: room.rows, phase: room.phase, myHand: player.hand, myPenalty: player.penalty,
-                // 제출된 카드 상태 전송 (PLAYING 단계가 끝나면 카드의 실제 숫자와 정보도 공개)
                 submittedStatus: room.players.map(p => {
                     const sc = room.submittedCards.find(c => c.playerId === p.id);
                     return {
@@ -118,16 +165,11 @@ function triggerBots(roomId) {
 
 function checkAllCardsSubmitted(roomId) {
     const room = rooms[roomId];
-    
     if (room.submittedCards.length === room.players.length) {
         room.phase = 'RESOLVING';
         room.submittedCards.sort((a, b) => a.card.number - b.card.number);
-        
-        broadcastGameState(roomId); // 제출된 카드들의 앞면을 클라이언트에 공개 브로드캐스트
-        
+        broadcastGameState(roomId); 
         io.to(roomId).emit('systemMessage', `모든 카드가 공개되었습니다! (잠시 후 순서대로 배치됩니다)`);
-        
-        // 카드를 확인할 수 있도록 대기 시간을 3.5초로 연장
         setTimeout(() => processNextCard(roomId), 3500); 
     } else {
         broadcastGameState(roomId);
@@ -149,7 +191,7 @@ function processNextCard(roomId) {
         return;
     }
 
-    const currentPlay = room.submittedCards.shift(); // 큐에서 빠져나가면 클라이언트 배지에서도 사라짐
+    const currentPlay = room.submittedCards.shift();
     const player = room.players.find(p => p.id === currentPlay.playerId);
     const card = currentPlay.card;
 
@@ -192,6 +234,12 @@ function processNextCard(roomId) {
         player.penalty += penaltyScore;
         io.to(roomId).emit('systemMessage', `💥 ${player.name}님이 6번째 카드를 놓아 벌점 ${penaltyScore}점을 받았습니다!`);
         io.to(roomId).emit('actionSound', 'penalty');
+
+        if (player.isBot) {
+            getBotDialogue(player.name, player.personaDesc, `자신이 낸 카드가 6번째 카드가 되어서 벌점 ${penaltyScore}점을 왕창 먹은 상황`).then(dialogue => {
+                if(dialogue) io.to(roomId).emit('systemMessage', `💬 ${player.name}: "${dialogue}"`);
+            });
+        }
     } else {
         io.to(roomId).emit('actionSound', 'play');
     }
@@ -208,6 +256,12 @@ function executeRowSelection(roomId, player, rowIndex, card) {
     
     io.to(roomId).emit('systemMessage', `🔄 ${player.name}님이 행을 교체하고 벌점 ${penaltyScore}점을 가져갔습니다.`);
     io.to(roomId).emit('actionSound', 'penalty');
+
+    if (player.isBot) {
+        getBotDialogue(player.name, player.personaDesc, `자신이 낸 카드의 숫자가 너무 작아서, 어쩔 수 없이 벌점 ${penaltyScore}점이 있는 행을 먹어야만 하는 억울한 상황`).then(dialogue => {
+            if(dialogue) io.to(roomId).emit('systemMessage', `💬 ${player.name}: "${dialogue}"`);
+        });
+    }
 
     room.rows[rowIndex] = [card]; 
     room.phase = 'RESOLVING';
@@ -234,11 +288,7 @@ function resetRoom(roomId) {
     room.phase = 'WAITING';
     room.submittedCards = [];
     room.rows = [[], [], [], []];
-    room.players.forEach(p => {
-        p.hand = [];
-        // p.penalty = 0; 누적 점수를 위해 리셋 로직 제거
-        p.isReady = p.isHost || p.isBot;
-    });
+    room.players.forEach(p => { p.hand = []; p.isReady = p.isHost || p.isBot; });
     io.to(roomId).emit('gameStopped');
     io.to(roomId).emit('updatePlayers', room.players);
     broadcastRoomList();
@@ -285,9 +335,13 @@ io.on('connection', (socket) => {
         
         const botsToAdd = Math.min(count, 10 - room.players.length); 
         for (let i = 0; i < botsToAdd; i++) {
+            const persona = botPersonalities[Math.floor(Math.random() * botPersonalities.length)];
             room.players.push({ 
-                id: `bot_${roomId}_${Math.random()}`, name: `봇 ${room.botCounter++}`, avatar: botAvatars[Math.floor(Math.random() * botAvatars.length)],
-                hand: [], penalty: 0, isBot: true, isHost: false, isReady: true 
+                id: `bot_${roomId}_${Math.random()}`, 
+                name: `${persona.label} (봇 ${room.botCounter++})`, // 💡 봇 이름에 캐릭터 닉네임 직관적으로 적용
+                avatar: botAvatars[Math.floor(Math.random() * botAvatars.length)],
+                hand: [], penalty: 0, isBot: true, isHost: false, isReady: true,
+                personaDesc: persona.desc 
             });
         }
         io.to(roomId).emit('updatePlayers', room.players);
@@ -308,11 +362,7 @@ io.on('connection', (socket) => {
                 if (!targetPlayer.isBot) {
                     io.to(targetPlayer.id).emit('kicked');
                     const targetSocket = io.sockets.sockets.get(targetPlayer.id);
-                    if(targetSocket) {
-                        targetSocket.leave(roomId);
-                        targetSocket.roomId = null;
-                        targetSocket.join('lobby');
-                    }
+                    if(targetSocket) { targetSocket.leave(roomId); targetSocket.roomId = null; targetSocket.join('lobby'); }
                 }
                 io.to(roomId).emit('updatePlayers', room.players);
                 broadcastRoomList();
@@ -342,7 +392,6 @@ io.on('connection', (socket) => {
         room.players.forEach(p => { 
             p.hand = room.deck.splice(0, 10); 
             p.hand.sort((a, b) => a.number - b.number); 
-            // p.penalty = 0; 누적 점수 유지를 위해 초기화 제거
         });
         
         room.rows = [[room.deck.pop()], [room.deck.pop()], [room.deck.pop()], [room.deck.pop()]];
