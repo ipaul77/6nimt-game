@@ -108,8 +108,8 @@ function startUrgeTimer(roomId) {
     }, 7000);
 }
 
-function initRoom(roomName) {
-    return { name: roomName, players: [], deck: [], rows: [[], [], [], []], submittedCards: [], phase: 'PLAYING', botCounter: 1, isGameRunning: false, urgeTimer: null };
+function initRoom(roomName, isReverse = false) {
+    return { name: roomName, players: [], deck: [], rows: [[], [], [], []], submittedCards: [], phase: 'PLAYING', botCounter: 1, isGameRunning: false, urgeTimer: null, isReverse: isReverse };
 }
 
 function broadcastRoomList() {
@@ -205,7 +205,9 @@ function processNextCard(roomId) {
     if (room.rows[targetIdx].length === 5) {
         const speaker = getRandomBot(room);
         if(speaker && speaker.id !== player.id) {
-            const sit = `방금 플레이어 '${player.name}'가 특정 행에 5번째 카드를 놓아서, 다음 카드가 놓이면 무조건 벌점 6장을 먹게 될 확률이 엄청 높아진 긴장되는 위기 상황.`;
+            const sit = room.isReverse 
+                ? `방금 플레이어 '${player.name}'가 특정 행에 5번째 카드를 놓아서, 다음 카드가 놓이면 소머리(점수)를 대량으로 획득할 수 있는 대박 찬스가 온 상황이라 서로 먹으려고 기대하는 상황.`
+                : `방금 플레이어 '${player.name}'가 특정 행에 5번째 카드를 놓아서, 다음 카드가 놓이면 무조건 벌점 6장을 먹게 될 확률이 엄청 높아진 긴장되는 위기 상황.`;
             getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
                 if(d) io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
             });
@@ -218,7 +220,12 @@ function processNextCard(roomId) {
         // 도발 AI 트리거
         const speaker = getRandomBot(room);
         if(speaker) {
-            const sit = player.isBot ? "자기 팀 봇이 벌점을 먹어 안타까워하는 상황" : `플레이어 '${player.name}'가 벌점 ${score}점을 먹어 매우 고소해하는 상황`;
+            let sit = "";
+            if (room.isReverse) {
+                sit = player.isBot ? `자기 팀 봇이 소머리(점수)를 대량 획득해서 매우 기뻐하고 환호하는 상황` : `플레이어 '${player.name}'가 소머리(점수) ${score}점을 독식해서 배아파하고 질투하는 상황`;
+            } else {
+                sit = player.isBot ? "자기 팀 봇이 벌점을 먹어 안타까워하는 상황" : `플레이어 '${player.name}'가 벌점 ${score}점을 먹어 매우 고소해하는 상황`;
+            }
             getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
                 if(d) io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
             });
@@ -236,7 +243,12 @@ function executeRowSelection(roomId, player, rowIndex, card) {
     
     const speaker = getRandomBot(room);
     if(speaker) {
-        const sit = `플레이어 '${player.name}'가 낼 카드가 없어서 벌점 ${score}점 행을 억지로 가져가는 굴욕적인 상황`;
+        let sit = "";
+        if (room.isReverse) {
+            sit = `플레이어 '${player.name}'가 낼 카드가 없어서 강제로 자신이 원하는 점수 높은 행을 가져가 ${score}점을 획득하는 상황이라 얄밉고 부러워하는 상황`;
+        } else {
+            sit = `플레이어 '${player.name}'가 낼 카드가 없어서 벌점 ${score}점 행을 억지로 가져가는 굴욕적인 상황`;
+        }
         getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
             if(d) io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
         });
@@ -250,7 +262,11 @@ function executeRowSelection(roomId, player, rowIndex, card) {
 function endRound(roomId) {
     const room = rooms[roomId]; room.isGameRunning = false;
     clearUrgeTimer(roomId);
-    room.players.sort((a,b)=>a.penalty - b.penalty);
+    if (room.isReverse) {
+        room.players.sort((a,b)=>b.penalty - a.penalty);
+    } else {
+        room.players.sort((a,b)=>a.penalty - b.penalty);
+    }
     io.to(roomId).emit('gameOver', room.players);
     broadcastRoomList();
     
@@ -258,7 +274,9 @@ function endRound(roomId) {
     if (speaker) {
         const myRank = room.players.findIndex(p => p.id === speaker.id) + 1;
         const myPenalty = speaker.penalty;
-        const sit = `라운드가 종료되었고 내 최종 등수는 ${myRank}등, 벌점은 ${myPenalty}점인 상황. 1등이면 엄청 잘난척하고, 꼴등이면 분노하거나 우울해하기.`;
+        const sit = room.isReverse 
+            ? `라운드가 종료되었고 내 최종 등수는 ${myRank}등, 획득한 소머리 점수는 ${myPenalty}점인 상황. 1등이면 소머리를 많이 먹었다며 엄청 잘난척하고, 꼴등이면 점수를 못 먹어서 억울해하기.`
+            : `라운드가 종료되었고 내 최종 등수는 ${myRank}등, 벌점은 ${myPenalty}점인 상황. 1등이면 엄청 잘난척하고, 꼴등이면 분노하거나 우울해하기.`;
         getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
             if(d) setTimeout(() => io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`), 1500);
         });
@@ -278,7 +296,7 @@ io.on('connection', (socket) => {
     socket.join('lobby'); broadcastRoomList();
     socket.on('createRoom', (data) => {
         const rid = 'room_' + Math.random().toString(36).substr(2, 6);
-        rooms[rid] = initRoom(data.roomName || `${data.nickname}의 방`);
+        rooms[rid] = initRoom(data.roomName || `${data.nickname}의 방`, data.isReverse);
         socket.leave('lobby'); socket.join(rid); socket.roomId = rid;
         rooms[rid].players.push({ id: socket.id, name: data.nickname, avatar: data.avatar, hand: [], penalty: 0, isBot: false, isHost: true, isReady: true });
         socket.emit('joinSuccess', { isHost: true, roomName: rooms[rid].name });
