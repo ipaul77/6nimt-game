@@ -77,8 +77,39 @@ function shuffle(array) {
     return array;
 }
 
+function clearUrgeTimer(roomId) {
+    const room = rooms[roomId];
+    if (room && room.urgeTimer) {
+        clearTimeout(room.urgeTimer);
+        room.urgeTimer = null;
+    }
+}
+
+function startUrgeTimer(roomId) {
+    const room = rooms[roomId];
+    if (!room || !room.isGameRunning) return;
+    clearUrgeTimer(roomId);
+    
+    room.urgeTimer = setTimeout(() => {
+        const cRoom = rooms[roomId];
+        if (!cRoom || cRoom.phase !== 'PLAYING') return;
+        
+        let submittedBots = cRoom.players.filter(p => p.isBot && cRoom.submittedCards.some(sc => sc.playerId === p.id));
+        let speaker = submittedBots.length > 0 ? submittedBots[Math.floor(Math.random() * submittedBots.length)] : getRandomBot(cRoom);
+        
+        if (speaker) {
+            const notSubmitted = cRoom.players.filter(p => !cRoom.submittedCards.some(sc => sc.playerId === p.id) && !p.isBot);
+            const targetName = notSubmitted.length > 0 ? notSubmitted[0].name : '누군가';
+            const sit = `카드 제출 단계에서 시간이 꽤 지났는데도 플레이어 '${targetName}'(이)가 카드를 안 내고 한참 고민 중이라 너무 답답해하며 빨리 내라고 독촉하는 상황.`;
+            getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
+                if(d) io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
+            });
+        }
+    }, 7000);
+}
+
 function initRoom(roomName) {
-    return { name: roomName, players: [], deck: [], rows: [[], [], [], []], submittedCards: [], phase: 'PLAYING', botCounter: 1, isGameRunning: false };
+    return { name: roomName, players: [], deck: [], rows: [[], [], [], []], submittedCards: [], phase: 'PLAYING', botCounter: 1, isGameRunning: false, urgeTimer: null };
 }
 
 function broadcastRoomList() {
@@ -134,6 +165,7 @@ function triggerBots(roomId) {
 function checkAllCardsSubmitted(roomId) {
     const room = rooms[roomId];
     if (room.submittedCards.length === room.players.length) {
+        clearUrgeTimer(roomId);
         room.phase = 'RESOLVING';
         room.submittedCards.sort((a, b) => a.card.number - b.card.number);
         broadcastGameState(roomId);
@@ -146,7 +178,7 @@ function processNextCard(roomId) {
     if (!room || !room.isGameRunning) return;
     if (room.submittedCards.length === 0) {
         if (room.players.every(p => p.hand.length === 0)) endRound(roomId);
-        else { room.phase = 'PLAYING'; broadcastGameState(roomId); triggerBots(roomId); }
+        else { room.phase = 'PLAYING'; broadcastGameState(roomId); triggerBots(roomId); startUrgeTimer(roomId); }
         return;
     }
     const currentPlay = room.submittedCards.shift();
@@ -170,6 +202,15 @@ function processNextCard(roomId) {
         return;
     }
     room.rows[targetIdx].push(card);
+    if (room.rows[targetIdx].length === 5) {
+        const speaker = getRandomBot(room);
+        if(speaker && speaker.id !== player.id) {
+            const sit = `방금 플레이어 '${player.name}'가 특정 행에 5번째 카드를 놓아서, 다음 카드가 놓이면 무조건 벌점 6장을 먹게 될 확률이 엄청 높아진 긴장되는 위기 상황.`;
+            getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
+                if(d) io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
+            });
+        }
+    }
     if (room.rows[targetIdx].length === 6) {
         const score = room.rows[targetIdx].splice(0, 5).reduce((s,c)=>s+c.bullheads,0);
         player.penalty += score;
@@ -208,13 +249,25 @@ function executeRowSelection(roomId, player, rowIndex, card) {
 
 function endRound(roomId) {
     const room = rooms[roomId]; room.isGameRunning = false;
+    clearUrgeTimer(roomId);
     room.players.sort((a,b)=>a.penalty - b.penalty);
     io.to(roomId).emit('gameOver', room.players);
     broadcastRoomList();
+    
+    const speaker = getRandomBot(room);
+    if (speaker) {
+        const myRank = room.players.findIndex(p => p.id === speaker.id) + 1;
+        const myPenalty = speaker.penalty;
+        const sit = `라운드가 종료되었고 내 최종 등수는 ${myRank}등, 벌점은 ${myPenalty}점인 상황. 1등이면 엄청 잘난척하고, 꼴등이면 분노하거나 우울해하기.`;
+        getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
+            if(d) setTimeout(() => io.to(roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`), 1500);
+        });
+    }
 }
 
 function resetRoom(roomId) {
     const room = rooms[roomId]; if(!room) return;
+    clearUrgeTimer(roomId);
     room.isGameRunning = false; room.phase = 'WAITING'; room.submittedCards = []; room.rows = [[],[],[],[]];
     room.players.forEach(p => { p.hand = []; p.isReady = p.isHost || p.isBot; });
     io.to(roomId).emit('gameStopped'); io.to(roomId).emit('updatePlayers', room.players);
@@ -263,6 +316,15 @@ io.on('connection', (socket) => {
         room.rows = [[room.deck.pop()],[room.deck.pop()],[room.deck.pop()],[room.deck.pop()]];
         room.isGameRunning = true; room.phase = 'PLAYING';
         io.to(socket.roomId).emit('gameStarted'); broadcastGameState(socket.roomId); triggerBots(socket.roomId);
+        
+        const speaker = getRandomBot(room);
+        if (speaker) {
+            const sit = `게임이 막 시작되어 다들 처음 카드를 받은 상황. 첫 턴 시작을 알리는 멋지거나 재밌는 멘트.`;
+            getBotDialogue(speaker.name, speaker.personaDesc, sit).then(d => {
+                if(d) io.to(socket.roomId).emit('systemMessage', `💬 ${speaker.name}: "${d}"`);
+            });
+        }
+        startUrgeTimer(socket.roomId);
     });
     socket.on('submitCard', (idx) => {
         const room = rooms[socket.roomId]; if(room && room.phase === 'PLAYING'){
