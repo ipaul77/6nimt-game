@@ -41,7 +41,7 @@ async function getBotDialogue(botName, personaDesc, situation) {
 5. 적절한 이모티콘을 1~2개 섞어주세요.`;
 
         // 🚨 아래 주소를 용진 님의 Ngrok 주소로 변경하세요! (끝에 /v1/chat/completions 유지)
-        const response = await fetch('https://reflected-unhook-discern.ngrok-free.dev', {
+        const response = await fetch('https://reflected-unhook-discern.ngrok-free.dev/v1/chat/completions', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
