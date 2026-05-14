@@ -97,23 +97,44 @@
         const socket = io();
         let amIHost = false; let myNickname = ''; let localPenalty = 0; let botCount = 1;
         
-        // 💡 오디오 엔진 (심장박동 & 효과음)
+        // 💡 [수정] 모바일 강력 오디오 락 해제 로직
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        let audioCtx; let isUnlocked = false;
-        let heartbeatOsc = null; let heartbeatTimeout = null;
+        let audioCtx; 
+        let heartbeatTimeout = null;
 
-        function unlockAudio() {
-            if(isUnlocked) return;
-            audioCtx = new AudioCtx();
-            const msg = new SpeechSynthesisUtterance('unlocked'); msg.volume = 0;
-            window.speechSynthesis.speak(msg);
-            isUnlocked = true;
+        function initAndUnlockAudio() {
+            if (!audioCtx) audioCtx = new AudioCtx();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            // Web Audio API 잠금 해제용 무음 파동
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0;
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(0); osc.stop(audioCtx.currentTime + 0.1);
+
+            // 모바일 사파리용 TTS 강제 기상
+            if (window.speechSynthesis) {
+                window.speechSynthesis.resume();
+                const msg = new SpeechSynthesisUtterance(''); msg.volume = 0;
+                window.speechSynthesis.speak(msg);
+            }
+
+            // 불필요한 이벤트리스너 제거
+            window.removeEventListener('touchstart', initAndUnlockAudio);
+            window.removeEventListener('click', initAndUnlockAudio);
         }
-        window.addEventListener('click', unlockAudio);
 
-        // 💡 동적 심장박동 생성 함수
+        // 사용자의 첫 터치/클릭 무조건 감지
+        window.addEventListener('touchstart', initAndUnlockAudio, { once: true });
+        window.addEventListener('click', initAndUnlockAudio, { once: true });
+
+        // 💡 [수정] 엔진 기상 장치가 포함된 동적 심장박동 함수
         function playHeartbeat(bpm) {
             if(!audioCtx) return;
+            // ⭐️ iOS가 오디오를 재웠다면 강제로 깨웁니다
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            
             if(heartbeatTimeout) clearTimeout(heartbeatTimeout);
             
             const duration = 60 / bpm;
@@ -121,13 +142,14 @@
             
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
-            osc.type = 'sine'; osc.frequency.setValueAtTime(60, now);
+            osc.type = 'sine'; 
+            osc.frequency.setValueAtTime(50, now); // 더 무겁고 웅장한 심장소리
             osc.frequency.exponentialRampToValueAtTime(30, now + 0.1);
-            gain.gain.setValueAtTime(0.5, now);
-            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+            gain.gain.setValueAtTime(0.8, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
             
             osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.start(); osc.stop(now + 0.1);
+            osc.start(now); osc.stop(now + 0.15);
             
             heartbeatTimeout = setTimeout(() => playHeartbeat(bpm), duration * 1000);
         }
@@ -137,34 +159,56 @@
             document.getElementById('main-table').style.boxShadow = "none";
         }
 
-        // 💡 성격별 TTS 로직
+        // 💡 [수정] 모바일 엔진 재가동이 포함된 TTS 로직
         function speakBot(name, text) {
+            if (!window.speechSynthesis) return;
+            // ⭐️ iOS에서 봇 대사가 씹히지 않게 강제 리셋
+            window.speechSynthesis.resume(); 
+
             const msg = new SpeechSynthesisUtterance(text);
             msg.lang = 'ko-KR';
+            
             if(name.includes('극대노')) { msg.pitch = 1.6; msg.rate = 1.4; }
             else if(name.includes('소심한')) { msg.pitch = 1.3; msg.rate = 0.8; }
             else if(name.includes('깐족')) { msg.pitch = 1.1; msg.rate = 1.3; }
             else if(name.includes('흑염룡')) { msg.pitch = 0.5; msg.rate = 0.7; }
             else if(name.includes('이장님')) { msg.pitch = 0.7; msg.rate = 0.6; }
+            else if(name.includes('알파고')) { msg.pitch = 1.0; msg.rate = 1.0; }
+            
             window.speechSynthesis.speak(msg);
         }
 
-        // 효과음
+        // 💡 [수정] 효과음 재생 시 오디오 엔진 상태 체크
         socket.on('actionSound', (type) => {
             if(!audioCtx) return;
+            if(audioCtx.state === 'suspended') audioCtx.resume(); // ⭐️ 깨우기 필수
+
             const now = audioCtx.currentTime;
             const osc = audioCtx.createOscillator(); const g = audioCtx.createGain();
-            if(type==='play') { osc.type='sine'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(40, now+0.1); g.gain.setValueAtTime(0.3, now); }
-            else { osc.type='sawtooth'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(20, now+0.5); g.gain.setValueAtTime(0.5, now); }
+            if(type==='play') { 
+                osc.type='sine'; osc.frequency.setValueAtTime(150, now); 
+                osc.frequency.exponentialRampToValueAtTime(40, now+0.1); 
+                g.gain.setValueAtTime(0.3, now); 
+            } else { 
+                osc.type='sawtooth'; osc.frequency.setValueAtTime(100, now); 
+                osc.frequency.linearRampToValueAtTime(20, now+0.5); 
+                g.gain.setValueAtTime(0.5, now); 
+            }
             g.gain.exponentialRampToValueAtTime(0.01, now+0.2);
             osc.connect(g); g.connect(audioCtx.destination);
-            osc.start(); osc.stop(now+0.5);
+            osc.start(now); osc.stop(now+0.5);
         });
 
+        // ========================== [이하 UI 및 게임 로직] ========================== //
         function showTutorial() { document.getElementById('tutorial-modal').style.display='flex'; }
         function hideTutorial() { document.getElementById('tutorial-modal').style.display='none'; }
-        function changeBotCount(v) { botCount = Math.max(1, Math.min(9, botCount + v)); document.getElementById('bot-count-val').innerText = botCount; }
+        function changeBotCount(v) { 
+            initAndUnlockAudio(); // 버튼 클릭 시 오디오 엔진 체크
+            botCount = Math.max(1, Math.min(9, botCount + v)); 
+            document.getElementById('bot-count-val').innerText = botCount; 
+        }
         function enterLobby() { 
+            initAndUnlockAudio();
             myNickname = document.getElementById('nickname-input').value.trim();
             if(!myNickname) return alert('닉네임!');
             document.getElementById('login-area').style.display='none';
@@ -191,9 +235,9 @@
             document.getElementById('host-controls').style.display = amIHost ? 'block' : 'none';
             document.getElementById('ready-btn').style.display = amIHost ? 'none' : 'block';
         });
-        function addBots() { socket.emit('addBots', botCount); }
-        function toggleReady() { socket.emit('toggleReady'); }
-        function startGame() { socket.emit('startGame'); }
+        function addBots() { initAndUnlockAudio(); socket.emit('addBots', botCount); }
+        function toggleReady() { initAndUnlockAudio(); socket.emit('toggleReady'); }
+        function startGame() { initAndUnlockAudio(); socket.emit('startGame'); }
         
         socket.on('updatePlayers', (ps) => {
             const me = ps.find(p=>p.id===socket.id);
@@ -235,13 +279,15 @@
             localPenalty = me.penalty;
             document.getElementById('penalty-display').innerText = `누적 벌점: ${me.penalty} 🐂`;
 
-            // 💡 심장박동 로직: 5장 쌓인 행 체크
+            // 💡 심장박동 로직 연동
             const dangers = state.rows.filter(r=>r.length===5).length;
             if(dangers > 0) {
-                const bpm = 60 + (dangers * 30);
+                const bpm = 60 + (dangers * 30); // 1개일 때 90BPM, 2개면 120BPM
                 playHeartbeat(bpm);
                 document.getElementById('main-table').style.boxShadow = `inset 0 0 ${dangers*20}px rgba(255,0,0,0.5)`;
-            } else stopHeartbeat();
+            } else {
+                stopHeartbeat();
+            }
 
             const obar = document.getElementById('opponents-bar'); obar.innerHTML = '';
             state.playersInfo.forEach(p => {
@@ -271,7 +317,11 @@
             const handEl = document.getElementById('my-cards'); handEl.innerHTML = '';
             state.myHand.forEach((c, i) => {
                 const cd = createCardDOM(c, canPlay);
-                if(canPlay) cd.onclick = () => { cd.classList.add('flying'); setTimeout(()=>socket.emit('submitCard', i), 300); };
+                if(canPlay) cd.onclick = () => { 
+                    initAndUnlockAudio(); // 카드 낼 때 혹시 몰라 엔진 깨우기
+                    cd.classList.add('flying'); 
+                    setTimeout(()=>socket.emit('submitCard', i), 300); 
+                };
                 handEl.appendChild(cd);
             });
         });
