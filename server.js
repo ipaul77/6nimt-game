@@ -169,7 +169,8 @@ function checkAllCardsSubmitted(roomId) {
         room.phase = 'RESOLVING';
         room.submittedCards.sort((a, b) => a.card.number - b.card.number);
         broadcastGameState(roomId);
-        setTimeout(() => processNextCard(roomId), 3500);
+        clearTimeout(room.processTimer);
+        room.processTimer = setTimeout(() => processNextCard(roomId), 3500);
     } else broadcastGameState(roomId);
 }
 
@@ -232,7 +233,8 @@ function processNextCard(roomId) {
         }
     } else io.to(roomId).emit('actionSound', 'play');
     broadcastGameState(roomId);
-    setTimeout(() => processNextCard(roomId), 1200);
+    clearTimeout(room.processTimer);
+    room.processTimer = setTimeout(() => processNextCard(roomId), 1200);
 }
 
 function executeRowSelection(roomId, player, rowIndex, card) {
@@ -256,7 +258,8 @@ function executeRowSelection(roomId, player, rowIndex, card) {
 
     room.rows[rowIndex] = [card]; room.phase = 'RESOLVING';
     broadcastGameState(roomId);
-    setTimeout(() => processNextCard(roomId), 1200);
+    clearTimeout(room.processTimer);
+    room.processTimer = setTimeout(() => processNextCard(roomId), 1200);
 }
 
 function endRound(roomId) {
@@ -286,6 +289,7 @@ function endRound(roomId) {
 function resetRoom(roomId) {
     const room = rooms[roomId]; if(!room) return;
     clearUrgeTimer(roomId);
+    clearTimeout(room.processTimer);
     room.isGameRunning = false; room.phase = 'WAITING'; room.submittedCards = []; room.rows = [[],[],[],[]];
     room.players.forEach(p => { p.hand = []; p.isReady = p.isHost || p.isBot; });
     io.to(roomId).emit('gameStopped'); io.to(roomId).emit('updatePlayers', room.players);
@@ -305,6 +309,7 @@ io.on('connection', (socket) => {
     socket.on('joinRoom', (data) => {
         const room = rooms[data.roomId];
         if(!room || room.isGameRunning) return socket.emit('joinError', '입장 불가');
+        if(room.players.length >= 10) return socket.emit('joinError', '최대 10명까지 입장 가능합니다.');
         socket.leave('lobby'); socket.join(data.roomId); socket.roomId = data.roomId;
         room.players.push({ id: socket.id, name: data.nickname, avatar: data.avatar, hand: [], penalty: 0, isBot: false, isHost: false, isReady: false });
         socket.emit('joinSuccess', { isHost: false, roomName: room.name });
@@ -358,6 +363,7 @@ io.on('connection', (socket) => {
         const room = rooms[socket.roomId]; if(room && room.phase === 'PLAYING'){
             const p = room.players.find(p=>p.id===socket.id);
             if(p && !room.submittedCards.some(sc=>sc.playerId===p.id)){
+                if (idx < 0 || idx >= p.hand.length) return;
                 room.submittedCards.push({ playerId: p.id, card: p.hand.splice(idx,1)[0] });
                 checkAllCardsSubmitted(socket.roomId);
             }
@@ -365,7 +371,10 @@ io.on('connection', (socket) => {
     });
     socket.on('selectRow', (ridx) => {
         const room = rooms[socket.roomId];
-        if(room && room.phase==='WAITING_ROW' && room.pendingPlayerId===socket.id) executeRowSelection(socket.roomId, room.players.find(p=>p.id===socket.id), ridx, room.pendingCard);
+        if(room && room.phase==='WAITING_ROW' && room.pendingPlayerId===socket.id) {
+            if (ridx < 0 || ridx >= 4) return;
+            executeRowSelection(socket.roomId, room.players.find(p=>p.id===socket.id), ridx, room.pendingCard);
+        }
     });
     socket.on('stopGame', () => { if(rooms[socket.roomId]) resetRoom(socket.roomId); });
     socket.on('returnToLobby', () => { if(rooms[socket.roomId]) resetRoom(socket.roomId); });
