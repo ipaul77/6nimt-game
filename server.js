@@ -327,6 +327,16 @@ io.on('connection', (socket) => {
             }
         }
     });
+    socket.on('toggleReady', () => {
+        const room = rooms[socket.roomId];
+        if (room && !room.isGameRunning) {
+            const player = room.players.find(p => p.id === socket.id);
+            if (player && !player.isHost) {
+                player.isReady = !player.isReady;
+                io.to(socket.roomId).emit('updatePlayers', room.players);
+            }
+        }
+    });
     socket.on('startGame', () => {
         const room = rooms[socket.roomId]; if(!room || room.players.length < 2) return;
         room.deck = shuffle(createDeck());
