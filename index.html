@@ -483,9 +483,15 @@
                 const kickBtnHtml = (amIHost && !p.isHost) 
                     ? `<button onclick="kickPlayer('${p.id}')" class="kick-btn">추방</button>` : '';
 
+                let scoreText = `누적 ${p.penalty}🐂`;
+                if (p.lastRoundPenalty !== undefined) {
+                    scoreText += ` <span style="font-size:0.8rem; color:#aaa;">(직전 +${p.lastRoundPenalty})</span>`;
+                }
+
                 listElement.innerHTML += `<div style="padding: 10px 8px; border-bottom:1px solid rgba(138,43,226,0.3); display:flex; justify-content:space-between; align-items:center; font-size: 1rem;">
                     <div style="display:flex; align-items:center; gap:8px;">
                         <span>${p.avatar} ${p.name} ${p.isHost ? '👑' : ''}</span> 
+                        <span style="color:#ff007a; font-weight:bold; margin-left:5px;">${scoreText}</span>
                     </div>
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span style="font-size: 1.1rem;">${p.isHost ? '' : (p.isReady ? '✅' : '⏳')}</span>
@@ -576,7 +582,7 @@
                 localMyPenalty = state.myPenalty; 
             }
 
-            document.getElementById('my-penalty-display').textContent = `누적 벌점: ${state.myPenalty} 🐂`;
+            document.getElementById('my-penalty-display').innerHTML = `누적 벌점: ${state.myPenalty} 🐂 <span style="font-size:0.8rem; color:#aaa;">(이번 판 +${state.myRoundPenalty || 0})</span>`;
 
             const opponentsBar = document.getElementById('opponents-bar'); opponentsBar.innerHTML = '';
             state.playersInfo.forEach(p => {
@@ -605,7 +611,7 @@
                 const infoHtml = `
                     <div class="avatar-icon">${p.avatar}</div>
                     <div class="name">${p.id === socket.id ? '나 ('+p.name+')' : p.name}</div>
-                    <div class="penalty">🐂 ${p.penalty}</div>
+                    <div class="penalty">🐂 ${p.penalty} <span style="font-size:0.7rem; color:#aaa;">(+${p.roundPenalty || 0})</span></div>
                 `;
                 
                 badge.appendChild(cardZone);
@@ -696,7 +702,11 @@
             listDiv.innerHTML = '';
             sortedPlayers.forEach((p, idx) => {
                 const medal = idx === 0 ? '🥇' : (idx === 1 ? '🥈' : (idx === 2 ? '🥉' : ''));
-                listDiv.innerHTML += `<div>${medal} ${idx+1}등: ${p.name} (벌점 <span style="color:#ff007a; font-weight:bold;">${p.penalty}</span>점)</div>`;
+                let scoreText = `${p.penalty}점`;
+                if (p.lastRoundPenalty !== undefined) {
+                    scoreText += ` <span style="font-size:0.9rem; color:#aaa;">(이번 판 +${p.lastRoundPenalty}점)</span>`;
+                }
+                listDiv.innerHTML += `<div>${medal} ${idx+1}등: ${p.name} (누적 <span style="color:#ff007a; font-weight:bold;">${scoreText}</span>)</div>`;
             });
 
             document.getElementById('winner-screen').style.display = 'flex';

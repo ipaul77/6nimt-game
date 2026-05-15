@@ -131,11 +131,12 @@ function broadcastGameState(roomId) {
         if (!player.isBot) {
             io.to(player.id).emit('updateGame', {
                 rows: room.rows, phase: room.phase, myHand: player.hand, myPenalty: player.penalty,
+                myRoundPenalty: player.penalty - (player.startRoundPenalty || 0),
                 submittedStatus: room.players.map(p => {
                     const sc = room.submittedCards.find(c => c.playerId === p.id);
                     return { id: p.id, hasSubmitted: !!sc, card: (sc && room.phase !== 'PLAYING') ? sc.card : null };
                 }),
-                playersInfo: room.players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar, penalty: p.penalty, isHost: p.isHost }))
+                playersInfo: room.players.map(p => ({ id: p.id, name: p.name, avatar: p.avatar, penalty: p.penalty, roundPenalty: p.penalty - (p.startRoundPenalty || 0), isHost: p.isHost }))
             });
         }
     });
@@ -265,6 +266,11 @@ function executeRowSelection(roomId, player, rowIndex, card) {
 function endRound(roomId) {
     const room = rooms[roomId]; room.isGameRunning = false;
     clearUrgeTimer(roomId);
+    
+    room.players.forEach(p => {
+        p.lastRoundPenalty = p.penalty - (p.startRoundPenalty || 0);
+    });
+
     if (room.isReverse) {
         room.players.sort((a,b)=>b.penalty - a.penalty);
     } else {
@@ -345,7 +351,7 @@ io.on('connection', (socket) => {
     socket.on('startGame', () => {
         const room = rooms[socket.roomId]; if(!room || room.players.length < 2) return;
         room.deck = shuffle(createDeck());
-        room.players.forEach(p => { p.hand = room.deck.splice(0,10).sort((a,b)=>a.number-b.number); });
+        room.players.forEach(p => { p.startRoundPenalty = p.penalty || 0; p.hand = room.deck.splice(0,10).sort((a,b)=>a.number-b.number); });
         room.rows = [[room.deck.pop()],[room.deck.pop()],[room.deck.pop()],[room.deck.pop()]];
         room.isGameRunning = true; room.phase = 'PLAYING';
         io.to(socket.roomId).emit('gameStarted'); broadcastGameState(socket.roomId); triggerBots(socket.roomId);
