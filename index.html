@@ -176,6 +176,37 @@
         </div>
     </div>
 
+    <!-- 방 만들기 모달 -->
+    <div id="create-room-modal" class="tutorial-modal">
+        <div class="tutorial-content" style="text-align: center;">
+            <h3 style="color: #00f0ff; margin-top: 0; font-size: 1.5rem; font-style: italic;">🎲 방 만들기</h3>
+            <input type="text" id="new-room-name" placeholder="방 제목" style="width: 100%; margin-bottom: 20px; text-align: left; padding: 12px; font-size: 1.1rem; background: rgba(0,0,0,0.8);">
+            
+            <div style="text-align: left; margin-bottom: 20px; background: rgba(0,0,0,0.4); padding: 15px; border-radius: 10px; border: 1px solid rgba(138,43,226,0.3);">
+                <label style="display: flex; align-items: center; margin-bottom: 12px; cursor: pointer;">
+                    <input type="radio" name="game-mode" value="normal" checked style="width: 20px; height: 20px; margin: 0 10px 0 0;"> 
+                    <div>
+                        <div style="font-weight: bold; color: #00f0ff; font-size: 1.1rem;">일반 모드 (기본)</div>
+                        <div style="font-size: 0.85rem; color: #aaa;">벌점을 가장 적게 먹으면 승리합니다.</div>
+                    </div>
+                </label>
+                <hr style="border: 0; border-top: 1px solid rgba(138,43,226,0.2); margin: 10px 0;">
+                <label style="display: flex; align-items: center; cursor: pointer;">
+                    <input type="radio" name="game-mode" value="reverse" style="width: 20px; height: 20px; margin: 0 10px 0 0;"> 
+                    <div>
+                        <div style="font-weight: bold; color: #ff007a; font-size: 1.1rem;">리버스 모드</div>
+                        <div style="font-size: 0.85rem; color: #aaa;">벌점을 가장 많이 먹으면 승리합니다!</div>
+                    </div>
+                </label>
+            </div>
+            
+            <div style="display: flex; gap: 10px;">
+                <button class="casino-btn" onclick="submitCreateRoom()" style="flex: 2;">방 만들기</button>
+                <button class="casino-btn" style="flex: 1; background: #333; box-shadow: none;" onclick="closeCreateRoomModal()">취소</button>
+            </div>
+        </div>
+    </div>
+
     <div class="login-container" id="login-area">
         <h1 class="title-glow">6Nimmt!</h1>
         <p style="margin: 5px 0 30px 0; color: #00f0ff; letter-spacing: 2px;">NEON EDITION</p>
@@ -425,12 +456,23 @@
         });
 
         function createNewRoom() {
-            let roomName = prompt("방 제목을 입력하세요:", `${myNickname}의 네온 테이블`);
-            if (roomName) {
-                const isReverse = confirm("리버스 모드(소머리를 많이 먹어야 승리)로 진행하시겠습니까?\n취소를 누르면 일반 모드(벌점 피하기)로 진행됩니다.");
-                if (isReverse) roomName = "[리버스] " + roomName;
-                socket.emit('createRoom', { nickname: myNickname, avatar: selectedAvatar, roomName, isReverse });
-            }
+            document.getElementById('new-room-name').value = `${myNickname}의 네온 테이블`;
+            document.querySelector('input[name="game-mode"][value="normal"]').checked = true;
+            document.getElementById('create-room-modal').style.display = 'flex';
+        }
+
+        function closeCreateRoomModal() {
+            document.getElementById('create-room-modal').style.display = 'none';
+        }
+
+        function submitCreateRoom() {
+            forceUnlockAudio();
+            let roomName = document.getElementById('new-room-name').value.trim() || `${myNickname}의 네온 테이블`;
+            const isReverse = document.querySelector('input[name="game-mode"][value="reverse"]').checked;
+            
+            if (isReverse) roomName = "[리버스] " + roomName;
+            socket.emit('createRoom', { nickname: myNickname, avatar: selectedAvatar, roomName, isReverse });
+            closeCreateRoomModal();
         }
 
         socket.on('joinSuccess', (data) => {
