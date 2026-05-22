@@ -285,6 +285,19 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io(); 
+        
+        let hasConnectedOnce = false;
+        socket.on('connect', () => {
+            if (hasConnectedOnce) {
+                alert('네트워크가 불안정하여 서버와 재연결되었습니다. 동기화를 위해 대기실로 이동합니다.');
+                location.reload();
+            }
+            hasConnectedOnce = true;
+        });
+        
+        socket.on('disconnect', () => {
+            console.warn('서버와의 연결이 끊어졌습니다. 재연결을 시도합니다...');
+        });
         let amIHost = false;
         let isReady = false;
         let selectedAvatar = '😎';
