@@ -193,8 +193,11 @@ function processNextCard(roomId) {
     }
     if (targetIdx === -1) {
         if (player.isBot) {
-            let minB = Infinity; let best = 0;
-            for(let i=0; i<4; i++) { let b = room.rows[i].reduce((s,c)=>s+c.bullheads,0); if(b<minB){minB=b; best=i;}}
+            let targetB = room.isReverse ? -Infinity : Infinity; let best = 0;
+            for(let i=0; i<4; i++) { 
+                let b = room.rows[i].reduce((s,c)=>s+c.bullheads,0); 
+                if(room.isReverse ? b > targetB : b < targetB){ targetB = b; best = i; }
+            }
             executeRowSelection(roomId, player, best, card);
         } else {
             room.phase = 'WAITING_ROW'; room.pendingPlayerId = player.id; room.pendingCard = card;
